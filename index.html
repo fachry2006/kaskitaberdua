@@ -1,801 +1,2340 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="id" class="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fesla Motors | $FESLA on Solana</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SakuAman — Pelacak Pengeluaran & Batas Aman Gajian</title>
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        feslaRed: '#E82127',
-                        feslaDark: '#0D0E11',
-                        feslaCard: '#171A20',
-                        feslaGray: '#22262F',
-                    }
-                }
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            slate: {
+              850: '#151e2e',
+              950: '#090d16',
             }
+          }
         }
-    </script>
+      }
+    }
+  </script>
 
-    <!-- Fonts & Lucide Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Chart.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- React & Babel Core -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Lucide Icons via CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
-    <style>
-        .bg-grid-pattern {
-            background-size: 32px 32px;
-            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-                              linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-        }
-        .hero-bg-1 {
-            background: linear-gradient(90deg, rgba(13, 14, 17, 0.25) 0%, rgba(13, 14, 17, 0.95) 65%), url('herofirst'), url('hero.jfif');
-            background-size: cover;
-            background-position: center;
-        }
-        .hero-bg-2 {
-            background: linear-gradient(rgba(13, 14, 17, 0.5), rgba(13, 14, 17, 0.95)), url('HEROtwo.jpg');
-            background-size: cover;
-            background-position: center;
-        }
-        .glass-panel {
-            background: rgba(23, 26, 32, 0.85);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0D0E11; }
-        ::-webkit-scrollbar-thumb { background: #22262F; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #E82127; }
-    </style>
+  <style>
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.5);
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-up {
+      animation: fadeSlideUp 0.25s ease-out forwards;
+    }
+
+    .dark input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      cursor: pointer;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+  </style>
 </head>
-<body class="bg-feslaDark text-white font-sans antialiased overflow-x-hidden selection:bg-feslaRed selection:text-white">
-
-    <div id="root"></div>
-
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-
-        const CONTRACT_ADDRESS = "FeslaSolanaMemeCoin69420PumpDotFunContract420";
-
-        function App() {
-            const [copied, setCopied] = useState(false);
-            const [solAmount, setSolAmount] = useState(1);
-            const [solPrice, setSolPrice] = useState(185.50);
-            const [selectedModel, setSelectedModel] = useState("Model F");
-            const [paintColor, setPaintColor] = useState("bg-feslaRed");
-            const [fsdEnabled, setFsdEnabled] = useState(true);
-            const [modalOpen, setModalOpen] = useState(false);
-            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-            // FSD Logs state
-            const [logs, setLogs] = useState([
-                "[0.00s] Connected to Solana Mainnet-Beta RPC Node...",
-                "[0.15s] Scanning Raydium & Orca DEX pools...",
-                "[0.42s] Detecting meme sentiment spike: +340%",
-                "[0.88s] Solana TPS: 3,450 | Block Time: 410ms",
-                "[1.05s] Auto-buying dip on $FESLA/SOL liquidity pair..."
-            ]);
-
-            useEffect(() => {
-                if (window.lucide) {
-                    window.lucide.createIcons();
-                }
-            }, [modalOpen, mobileMenuOpen, logs]);
-
-            useEffect(() => {
-                const interval = setInterval(() => {
-                    const sampleLogs = [
-                        "Executing high-frequency arbitrage on Orca...",
-                        "Raydium Concentrated Liquidity rebalanced.",
-                        "Solana Validator #402 confirmed block #294,102,110.",
-                        "Whale wallet swapped 150 SOL into $FESLA.",
-                        "Full Self-Doge AI: Optimal buy order placed."
-                    ];
-                    const randomLog = sampleLogs[Math.floor(Math.random() * sampleLogs.length)];
-                    const time = (Math.random() * 2).toFixed(2);
-                    setLogs(prev => [...prev.slice(-6), `[${time}s] ${randomLog}`]);
-                }, 3500);
-                return () => clearInterval(interval);
-            }, []);
-
-            const copyContract = () => {
-                const el = document.createElement('textarea');
-                el.value = CONTRACT_ADDRESS;
-                document.body.appendChild(el);
-                el.select();
-                document.execCommand('copy');
-                document.body.removeChild(el);
-
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-            };
-
-            const triggerOrder = () => {
-                if (window.confetti) {
-                    window.confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
-                }
-                alert(`Order Confirmed! Your ${selectedModel} allocation has been processed on Solana Mainnet.`);
-                setModalOpen(false);
-            };
-
-            // Calculated utility values
-            const feslaPerSol = 5000000;
-            const feslaReceived = solAmount * feslaPerSol;
-            const usdValue = (solAmount * solPrice).toFixed(2);
-
-            return (
-                <div class="min-h-screen flex flex-col justify-between">
-                    
-                    {/* NAVIGATION BAR */}
-                    <header class="fixed top-0 left-0 right-0 z-50 bg-feslaDark/90 backdrop-blur-md border-b border-white/5 px-6 py-4 flex items-center justify-between">
-                        {/* Logo */}
-                        <a href="#hero" class="flex items-center space-x-2">
-                            <img src="logofesla.png" alt="Fesla Logo" class="h-8 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-                            <div class="hidden flex-col leading-none">
-                                <div class="flex items-center space-x-1">
-                                    <span class="text-feslaRed font-black text-2xl tracking-tighter">F.</span>
-                                    <span class="text-white font-black text-xl tracking-[0.25em]">FESL</span>
-                                </div>
-                                <span class="text-white font-black text-xl tracking-[0.25em] pl-6">A</span>
-                            </div>
-                        </a>
-
-                        {/* Desktop Nav */}
-                        <nav class="hidden lg:flex items-center space-x-6 text-sm font-medium text-gray-300">
-                            <a href="#solana-utilities" class="hover:text-white transition">Solana Utility</a>
-                            <a href="#model-f" class="hover:text-white transition">Model F</a>
-                            <a href="#cybertruck" class="hover:text-white transition">CyberTrash</a>
-                            <a href="#fsd" class="hover:text-white transition">FSD Beta</a>
-                            <a href="#tokenomics" class="hover:text-white transition">Tokenomics</a>
-                            <a href="#roadmap" class="hover:text-white transition">Master Plan</a>
-                        </nav>
-
-                        {/* Actions */}
-                        <div class="hidden sm:flex items-center space-x-3">
-                            <button 
-                                onClick={() => setModalOpen(true)}
-                                class="bg-feslaRed hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-bold tracking-wider uppercase transition flex items-center space-x-2 shadow-lg shadow-feslaRed/20"
-                            >
-                                <i data-lucide="zap" class="w-4 h-4"></i>
-                                <span>Custom Order</span>
-                            </button>
-
-                            <button 
-                                onClick={copyContract}
-                                class="bg-feslaCard hover:bg-feslaGray border border-gray-800 text-gray-200 px-3 py-2 rounded-lg text-xs font-mono transition flex items-center space-x-2"
-                            >
-                                <i data-lucide="layers" class="w-3.5 h-3.5 text-feslaRed"></i>
-                                <span>{copied ? "COPIED!" : `${CONTRACT_ADDRESS.substring(0, 8)}...${CONTRACT_ADDRESS.substring(CONTRACT_ADDRESS.length - 4)}`}</span>
-                                <i data-lucide="copy" class="w-3 h-3 text-gray-400"></i>
-                            </button>
-                        </div>
-
-                        {/* Mobile Toggle */}
-                        <button 
-                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-                            class="lg:hidden text-gray-300 hover:text-white p-2"
-                        >
-                            <i data-lucide={mobileMenuOpen ? "x" : "menu"} class="w-6 h-6"></i>
-                        </button>
-                    </header>
-
-                    {/* Mobile Drawer */}
-                    {mobileMenuOpen && (
-                        <div class="fixed inset-0 top-16 bg-feslaDark/95 backdrop-blur-xl z-40 p-6 flex flex-col space-y-4 lg:hidden">
-                            <a href="#solana-utilities" onClick={() => setMobileMenuOpen(false)} class="text-gray-300 hover:text-white py-2 text-lg">Solana Utility</a>
-                            <a href="#model-f" onClick={() => setMobileMenuOpen(false)} class="text-gray-300 hover:text-white py-2 text-lg">Model F</a>
-                            <a href="#cybertruck" onClick={() => setMobileMenuOpen(false)} class="text-gray-300 hover:text-white py-2 text-lg">CyberTrash</a>
-                            <a href="#fsd" onClick={() => setMobileMenuOpen(false)} class="text-gray-300 hover:text-white py-2 text-lg">FSD Beta</a>
-                            <a href="#tokenomics" onClick={() => setMobileMenuOpen(false)} class="text-gray-300 hover:text-white py-2 text-lg">Tokenomics</a>
-                            <a href="#roadmap" onClick={() => setMobileMenuOpen(false)} class="text-gray-300 hover:text-white py-2 text-lg">Master Plan</a>
-                            
-                            <div class="pt-4 space-y-3">
-                                <button 
-                                    onClick={() => { setMobileMenuOpen(false); setModalOpen(true); }} 
-                                    class="w-full bg-feslaRed text-white py-3 rounded-lg font-bold text-center uppercase tracking-wider text-sm"
-                                >
-                                    Order Fesla Now
-                                </button>
-                                <button 
-                                    onClick={copyContract} 
-                                    class="w-full bg-feslaCard border border-gray-800 text-gray-300 py-3 rounded-lg font-mono text-xs text-center"
-                                >
-                                    {copied ? "Copied Address!" : "Copy Contract Address"}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* HERO SECTION - RATA KANAN (RIGHT ALIGNED CONTENT) */}
-                    <section id="hero" class="relative min-h-screen hero-bg-1 flex flex-col justify-center items-end pt-28 pb-12 px-6 md:px-16">
-                        
-                        <div class="w-full max-w-2xl space-y-6 text-right z-10 my-auto">
-                            
-                            <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 bg-feslaRed/10 border border-feslaRed/40 text-feslaRed text-xs rounded-full font-bold uppercase tracking-wider">
-                                <i data-lucide="cpu" class="w-3.5 h-3.5"></i>
-                                <span>Powered by Solana High-Speed Network</span>
-                            </div>
-
-                            <div class="space-y-1">
-                                <h1 class="text-5xl md:text-7xl font-black tracking-tight text-white uppercase">FESLA MOTORS</h1>
-                                <p class="text-gray-300 text-base md:text-lg font-medium">The World's Fastest Autonomous Meme Currency. Built on Solana.</p>
-                            </div>
-
-                            {/* Refined Card - Rata Kanan without Green or Purple */}
-                            <div class="glass-panel p-6 md:p-8 rounded-3xl border border-white/10 shadow-2xl space-y-6 text-left">
-                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800/80 pb-5">
-                                    <div class="space-y-1">
-                                        <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400">Solana Token Contract Address</h3>
-                                        <div class="flex items-center space-x-2">
-                                            <code class="text-sm font-mono text-white font-bold truncate max-w-xs">
-                                                {CONTRACT_ADDRESS}
-                                            </code>
-                                            <button 
-                                                onClick={copyContract} 
-                                                class="bg-feslaGray hover:bg-gray-700 text-white p-1.5 rounded-lg transition border border-gray-700 shrink-0"
-                                                title="Copy Contract"
-                                            >
-                                                <i data-lucide={copied ? "check" : "copy"} class="w-4 h-4 text-feslaRed"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div class="flex items-center space-x-2">
-                                        <a 
-                                            href="https://solscan.io" 
-                                            target="_blank" 
-                                            class="bg-feslaGray hover:bg-gray-700 text-white text-xs px-3.5 py-2 rounded-xl font-medium flex items-center space-x-1.5 border border-gray-700 transition"
-                                        >
-                                            <span>Solscan</span>
-                                            <i data-lucide="external-link" class="w-3 h-3 text-gray-400"></i>
-                                        </a>
-                                        <a 
-                                            href="https://raydium.io" 
-                                            target="_blank" 
-                                            class="bg-feslaRed hover:bg-red-700 text-white text-xs px-3.5 py-2 rounded-xl font-bold flex items-center space-x-1.5 shadow-md shadow-feslaRed/20 transition"
-                                        >
-                                            <span>Trade Raydium</span>
-                                            <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <p class="text-xs md:text-sm text-gray-300 leading-relaxed">
-                                    Fesla ($FESLA) combines electric meme velocity with the sub-second finality of Solana. Zero taxes, 100% burned liquidity pool, and real-time Solana DEX swap tools integrated directly into the dashboard.
-                                </p>
-
-                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                                    <div class="bg-feslaDark/90 p-3.5 rounded-xl border border-gray-800">
-                                        <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">NETWORK SPEED</div>
-                                        <div class="text-base font-black text-white mt-0.5">0.4s Block</div>
-                                    </div>
-                                    <div class="bg-feslaDark/90 p-3.5 rounded-xl border border-gray-800">
-                                        <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">TRANSACTION FEE</div>
-                                        <div class="text-base font-black text-white mt-0.5">&lt; $0.001</div>
-                                    </div>
-                                    <div class="bg-feslaDark/90 p-3.5 rounded-xl border border-gray-800">
-                                        <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">TOTAL BATTERY</div>
-                                        <div class="text-base font-black text-white mt-0.5">100B $FESLA</div>
-                                    </div>
-                                    <div class="bg-feslaDark/90 p-3.5 rounded-xl border border-gray-800">
-                                        <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">LIQUIDITY STATUS</div>
-                                        <div class="text-base font-black text-feslaRed mt-0.5">100% Burned</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center justify-end space-x-4 pt-2">
-                                <button 
-                                    onClick={() => setModalOpen(true)}
-                                    class="bg-feslaRed hover:bg-red-700 text-white font-bold py-3.5 px-8 rounded-xl text-xs uppercase tracking-wider transition transform hover:scale-105 shadow-xl shadow-feslaRed/20 flex items-center space-x-2"
-                                >
-                                    <i data-lucide="car" class="w-4 h-4"></i>
-                                    <span>Configure & Buy</span>
-                                </button>
-                            </div>
-
-                        </div>
-                    </section>
-
-                    {/* SOLANA UTILITY SUITE SECTION */}
-                    <section id="solana-utilities" class="py-20 bg-feslaDark border-t border-gray-800 px-6">
-                        <div class="max-w-6xl mx-auto">
-                            <div class="text-center max-w-3xl mx-auto mb-12">
-                                <span class="text-feslaRed text-xs font-bold uppercase tracking-widest bg-feslaRed/10 border border-feslaRed/30 px-3 py-1 rounded-full">
-                                    Functional On-Chain Tools
-                                </span>
-                                <h2 class="text-3xl md:text-4xl font-extrabold text-white mt-3">Solana Supercharger Utilities</h2>
-                                <p class="text-gray-400 text-sm md:text-base mt-2">Real-time trading calculator, live liquidity estimator, and contract validator.</p>
-                            </div>
-
-                            {/* Utility Container */}
-                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                
-                                {/* 1. Solana Swap Calculator */}
-                                <div class="glass-panel p-6 rounded-2xl space-y-4">
-                                    <div class="flex items-center justify-between border-b border-gray-800 pb-3">
-                                        <div class="flex items-center space-x-2">
-                                            <i data-lucide="arrow-right-left" class="w-5 h-5 text-feslaRed"></i>
-                                            <h3 class="font-bold text-white">Solana Swap Estimator</h3>
-                                        </div>
-                                        <span class="text-[10px] font-mono bg-feslaRed/20 text-feslaRed px-2 py-0.5 rounded">Raydium V2</span>
-                                    </div>
-
-                                    <div>
-                                        <label class="text-xs text-gray-400 block mb-1">Pay SOL Amount</label>
-                                        <div class="relative">
-                                            <input 
-                                                type="number" 
-                                                value={solAmount} 
-                                                onChange={(e) => setSolAmount(Math.max(0.01, parseFloat(e.target.value) || 0))}
-                                                class="w-full bg-feslaDark border border-gray-700 rounded-lg p-3 text-white font-bold text-lg focus:outline-none focus:border-feslaRed"
-                                            />
-                                            <span class="absolute right-3 top-3 text-xs font-bold text-feslaRed bg-feslaRed/10 px-2 py-1 rounded">SOL</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="space-y-2 text-xs bg-feslaDark/80 p-3 rounded-lg border border-gray-800">
-                                        <div class="flex justify-between text-gray-400">
-                                            <span>Est. USD Value:</span>
-                                            <span class="text-white font-mono">${usdValue} USD</span>
-                                        </div>
-                                        <div class="flex justify-between text-gray-400">
-                                            <span>Tokens Received:</span>
-                                            <span class="text-white font-bold font-mono">{feslaReceived.toLocaleString()} $FESLA</span>
-                                        </div>
-                                        <div class="flex justify-between text-gray-400">
-                                            <span>Estimated Price Impact:</span>
-                                            <span class="text-feslaRed">&lt; 0.01%</span>
-                                        </div>
-                                    </div>
-
-                                    <a 
-                                        href="https://raydium.io/swap" 
-                                        target="_blank" 
-                                        class="w-full bg-feslaRed hover:bg-red-700 text-white font-bold py-3 rounded-lg text-xs uppercase tracking-wider text-center flex items-center justify-center space-x-2 transition"
-                                    >
-                                        <span>Execute on Raydium</span>
-                                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                                    </a>
-                                </div>
-
-                                {/* 2. Live Solana Node Status */}
-                                <div class="glass-panel p-6 rounded-2xl space-y-4">
-                                    <div class="flex items-center justify-between border-b border-gray-800 pb-3">
-                                        <div class="flex items-center space-x-2">
-                                            <i data-lucide="activity" class="w-5 h-5 text-gray-300"></i>
-                                            <h3 class="font-bold text-white">Solana Telemetry</h3>
-                                        </div>
-                                        <span class="flex items-center space-x-1 text-[10px] text-feslaRed font-mono">
-                                            <span class="w-2 h-2 bg-feslaRed rounded-full animate-pulse"></span>
-                                            <span>ONLINE</span>
-                                        </span>
-                                    </div>
-
-                                    <div class="space-y-3 text-xs">
-                                        <div class="bg-feslaDark p-3 rounded-lg border border-gray-800 flex justify-between items-center">
-                                            <span class="text-gray-400">Mainnet TPS</span>
-                                            <span class="font-mono font-bold text-white">3,240 Transactions/sec</span>
-                                        </div>
-                                        <div class="bg-feslaDark p-3 rounded-lg border border-gray-800 flex justify-between items-center">
-                                            <span class="text-gray-400">Average Gas Fee</span>
-                                            <span class="font-mono font-bold text-gray-200">0.000005 SOL</span>
-                                        </div>
-                                        <div class="bg-feslaDark p-3 rounded-lg border border-gray-800 flex justify-between items-center">
-                                            <span class="text-gray-400">Current Slot</span>
-                                            <span class="font-mono font-bold text-white">294,812,049</span>
-                                        </div>
-                                        <div class="bg-feslaDark p-3 rounded-lg border border-gray-800 flex justify-between items-center">
-                                            <span class="text-gray-400">DEX Program</span>
-                                            <span class="font-mono font-bold text-gray-300">SPL Token Standard</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* 3. Security Verification */}
-                                <div class="glass-panel p-6 rounded-2xl space-y-4">
-                                    <div class="flex items-center justify-between border-b border-gray-800 pb-3">
-                                        <div class="flex items-center space-x-2">
-                                            <i data-lucide="shield-check" class="w-5 h-5 text-feslaRed"></i>
-                                            <h3 class="font-bold text-white">Smart Contract Audit</h3>
-                                        </div>
-                                        <span class="text-[10px] font-mono bg-feslaRed/10 text-feslaRed px-2 py-0.5 rounded">PASSED</span>
-                                    </div>
-
-                                    <ul class="space-y-2.5 text-xs text-gray-300">
-                                        <li class="flex items-start space-x-2">
-                                            <i data-lucide="check-circle" class="w-4 h-4 text-feslaRed shrink-0 mt-0.5"></i>
-                                            <span><strong>Mint Authority Revoked:</strong> Supply fixed at 100 Billion forever.</span>
-                                        </li>
-                                        <li class="flex items-start space-x-2">
-                                            <i data-lucide="check-circle" class="w-4 h-4 text-feslaRed shrink-0 mt-0.5"></i>
-                                            <span><strong>Freeze Authority Revoked:</strong> Tokens cannot be frozen by any party.</span>
-                                        </li>
-                                        <li class="flex items-start space-x-2">
-                                            <i data-lucide="check-circle" class="w-4 h-4 text-feslaRed shrink-0 mt-0.5"></i>
-                                            <span><strong>LP Tokens Burned:</strong> Initial liquidity permanently locked on Solscan.</span>
-                                        </li>
-                                    </ul>
-
-                                    <button 
-                                        onClick={copyContract}
-                                        class="w-full border border-gray-700 hover:bg-feslaGray text-gray-200 py-2.5 rounded-lg text-xs font-mono flex items-center justify-center space-x-2 transition"
-                                    >
-                                        <i data-lucide="file-code" class="w-4 h-4 text-feslaRed"></i>
-                                        <span>Verify Contract Address</span>
-                                    </button>
-                                </div>
-
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* MODEL F SECTION */}
-                    <section id="model-f" class="relative min-h-screen hero-bg-2 flex flex-col justify-between items-center py-24 px-4">
-                        <div class="text-center mt-6 z-10">
-                            <span class="text-feslaRed text-xs font-bold uppercase tracking-widest bg-feslaRed/10 border border-feslaRed/30 px-3 py-1 rounded-full">
-                                Flagship Vehicle
-                            </span>
-                            <h2 class="text-4xl md:text-6xl font-black text-white mt-2">Model F</h2>
-                            <p class="text-gray-300 text-sm md:text-lg">0-100 Sol in 0.0001 seconds. Fully Autonomous Pump.</p>
-                        </div>
-
-                        {/* Vehicle Stats Bar */}
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl w-full z-10 glass-panel p-6 rounded-2xl">
-                            <div class="text-center border-r border-gray-800 last:border-0">
-                                <div class="text-gray-400 text-xs font-bold uppercase">Akselerasi</div>
-                                <div class="text-2xl md:text-3xl font-black text-white mt-1">0.001s</div>
-                                <div class="text-[10px] text-feslaRed">Sub-Second Finality</div>
-                            </div>
-                            <div class="text-center border-r border-gray-800 last:border-0">
-                                <div class="text-gray-400 text-xs font-bold uppercase">Supercharge</div>
-                                <div class="text-2xl md:text-3xl font-black text-white mt-1">100%</div>
-                                <div class="text-[10px] text-gray-300">Clean Energy Memes</div>
-                            </div>
-                            <div class="text-center border-r border-gray-800 last:border-0">
-                                <div class="text-gray-400 text-xs font-bold uppercase">Solana Market</div>
-                                <div class="text-2xl md:text-3xl font-black text-white mt-1">$FESLA</div>
-                                <div class="text-[10px] text-gray-400">Raydium Liquidity</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-gray-400 text-xs font-bold uppercase">Range</div>
-                                <div class="text-2xl md:text-3xl font-black text-white mt-1">Unlimited</div>
-                                <div class="text-[10px] text-feslaRed">To The Moon</div>
-                            </div>
-                        </div>
-
-                        <div class="z-10">
-                            <button 
-                                onClick={() => { setSelectedModel("Model F"); setModalOpen(true); }}
-                                class="bg-feslaRed hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg text-sm uppercase tracking-wider transition transform hover:scale-105"
-                            >
-                                Order Model F
-                            </button>
-                        </div>
-                    </section>
-
-                    {/* CYBERTRASH SECTION */}
-                    <section id="cybertruck" class="py-24 bg-feslaDark border-t border-gray-800 px-6">
-                        <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                            <div class="space-y-6">
-                                <span class="text-feslaRed text-xs font-bold uppercase tracking-widest bg-feslaRed/10 border border-feslaRed/30 px-3 py-1 rounded-full">
-                                    Ultra Hardened Exoskeleton
-                                </span>
-                                <h2 class="text-4xl md:text-5xl font-black text-white uppercase italic">CyberTrash</h2>
-                                <p class="text-gray-300 text-sm md:text-base leading-relaxed">
-                                    Built with cold-rolled stainless steel to withstand FUD, bear cycles, and market liquidations. Equipped with unbreakable armor and direct Solana blockchain sync.
-                                </p>
-
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div class="bg-feslaCard p-4 rounded-xl border border-gray-800 flex items-start space-x-3">
-                                        <i data-lucide="shield" class="w-6 h-6 text-feslaRed shrink-0"></i>
-                                        <div>
-                                            <h4 class="text-sm font-bold text-white">Rugproof Exoskeleton</h4>
-                                            <p class="text-xs text-gray-400 mt-1">Liquidity permanently burned on-chain.</p>
-                                        </div>
-                                    </div>
-                                    <div class="bg-feslaCard p-4 rounded-xl border border-gray-800 flex items-start space-x-3">
-                                        <i data-lucide="gauge" class="w-6 h-6 text-white shrink-0"></i>
-                                        <div>
-                                            <h4 class="text-sm font-bold text-white">High Throughput</h4>
-                                            <p class="text-xs text-gray-400 mt-1">Capable of handling 65,000 TPS.</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button 
-                                    onClick={() => { setSelectedModel("CyberTrash"); setModalOpen(true); }}
-                                    class="bg-white text-black hover:bg-gray-200 font-bold py-3 px-8 rounded-lg text-sm uppercase tracking-wider transition"
-                                >
-                                    Order CyberTrash
-                                </button>
-                            </div>
-
-                            <div class="glass-panel p-8 rounded-3xl text-center space-y-6">
-                                <div class="w-24 h-24 bg-feslaGray/80 rounded-2xl mx-auto flex items-center justify-center border border-gray-700 shadow-inner">
-                                    <i data-lucide="box" class="w-12 h-12 text-feslaRed"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-xl font-bold text-white">CyberTrash Specs</h3>
-                                    <p class="text-xs text-gray-400 mt-1">Stainless Steel Armor Shell</p>
-                                </div>
-                                <div class="space-y-2 text-xs text-left">
-                                    <div class="flex justify-between border-b border-gray-800 pb-2">
-                                        <span class="text-gray-400">Payload Capacity</span>
-                                        <span class="font-mono text-white">100 Billion $FESLA</span>
-                                    </div>
-                                    <div class="flex justify-between border-b border-gray-800 pb-2">
-                                        <span class="text-gray-400">Drivetrain</span>
-                                        <span class="font-mono text-feslaRed">Dual Motor Solana Engine</span>
-                                    </div>
-                                    <div class="flex justify-between border-b border-gray-800 pb-2">
-                                        <span class="text-gray-400">Armor Level</span>
-                                        <span class="font-mono text-white">Anti-Rug Protection</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* FSD AUTOPILOT DEMO */}
-                    <section id="fsd" class="py-24 bg-feslaDark border-t border-gray-800 px-6">
-                        <div class="max-w-5xl mx-auto">
-                            <div class="text-center max-w-3xl mx-auto mb-12">
-                                <span class="text-feslaRed text-xs font-bold uppercase tracking-widest bg-feslaRed/10 border border-feslaRed/30 px-3 py-1 rounded-full">
-                                    Neural Network Trading
-                                </span>
-                                <h2 class="text-4xl font-extrabold text-white mt-3">Full Self-Doge (FSD) Beta</h2>
-                                <p class="text-gray-400 text-sm md:text-base mt-2">Automated on-chain telemetry and dip-buying algorithm on Solana.</p>
-                            </div>
-
-                            <div class="bg-black rounded-2xl border border-gray-800 p-6 md:p-8 bg-grid-pattern shadow-2xl">
-                                <div class="flex items-center justify-between border-b border-gray-800 pb-4 mb-6">
-                                    <div class="flex items-center space-x-2">
-                                        <i data-lucide="terminal" class="w-5 h-5 text-feslaRed"></i>
-                                        <span class="font-mono text-xs text-white uppercase tracking-wider">FSD_TELEMETRY_MAINNET_V6.9</span>
-                                    </div>
-                                    <span class="text-xs font-mono text-feslaRed bg-feslaRed/10 px-2.5 py-1 rounded border border-feslaRed/30">
-                                        ACTIVE NODE
-                                    </span>
-                                </div>
-
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div class="bg-feslaDark p-4 rounded-xl border border-gray-900 font-mono text-xs text-gray-300 space-y-2 h-52 overflow-y-auto">
-                                        {logs.map((log, index) => (
-                                            <div key={index} class="leading-relaxed">{log}</div>
-                                        ))}
-                                    </div>
-
-                                    <div class="space-y-4 text-xs">
-                                        <div class="bg-feslaDark p-4 rounded-xl border border-gray-800 space-y-2">
-                                            <div class="flex justify-between">
-                                                <span class="text-gray-400">Target Protocol</span>
-                                                <span class="text-white font-bold">Raydium AMM</span>
-                                            </div>
-                                            <div class="flex justify-between">
-                                                <span class="text-gray-400">Auto-Buy Sensitivity</span>
-                                                <span class="text-feslaRed font-bold">High Precision</span>
-                                            </div>
-                                            <div class="flex justify-between">
-                                                <span class="text-gray-400">Slippage Tolerance</span>
-                                                <span class="text-white font-bold">0.5%</span>
-                                            </div>
-                                        </div>
-
-                                        <button 
-                                            onClick={copyContract}
-                                            class="w-full bg-feslaRed hover:bg-red-700 text-white font-bold py-3 rounded-lg text-xs uppercase tracking-wider transition flex items-center justify-center space-x-2"
-                                        >
-                                            <i data-lucide="cpu" class="w-4 h-4"></i>
-                                            <span>Connect Wallet to FSD Node</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* TOKENOMICS */}
-                    <section id="tokenomics" class="py-24 bg-feslaDark border-t border-gray-800 px-6">
-                        <div class="max-w-6xl mx-auto">
-                            <div class="text-center max-w-3xl mx-auto mb-16">
-                                <span class="text-feslaRed font-bold tracking-widest text-xs uppercase bg-feslaRed/10 px-3 py-1 rounded-full border border-feslaRed/30">
-                                    Battery Specs
-                                </span>
-                                <h2 class="text-4xl md:text-5xl font-extrabold text-white mt-4">Tokenomics Architecture</h2>
-                                <p class="text-gray-400 text-base md:text-lg mt-3">Designed for maximum range, zero emissions, and pure decentralization on Solana.</p>
-                            </div>
-
-                            {/* Tokenomics Stats Grid */}
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                                <div class="bg-feslaCard p-6 rounded-2xl border border-gray-800 text-center hover:border-feslaRed/50 transition">
-                                    <div class="text-gray-400 text-xs font-bold uppercase mb-1">TOTAL BATTERY SUPPLY</div>
-                                    <div class="text-3xl font-black text-white">100B</div>
-                                    <div class="text-xs text-feslaRed font-semibold mt-1">100,000,000,000 $FESLA</div>
-                                </div>
-                                <div class="bg-feslaCard p-6 rounded-2xl border border-gray-800 text-center hover:border-feslaRed/50 transition">
-                                    <div class="text-gray-400 text-xs font-bold uppercase mb-1">BUY / SELL TAX</div>
-                                    <div class="text-3xl font-black text-white">0%</div>
-                                    <div class="text-xs text-gray-400 font-semibold mt-1">Zero Friction Trade</div>
-                                </div>
-                                <div class="bg-feslaCard p-6 rounded-2xl border border-gray-800 text-center hover:border-feslaRed/50 transition">
-                                    <div class="text-gray-400 text-xs font-bold uppercase mb-1">LIQUIDITY POOL</div>
-                                    <div class="text-3xl font-black text-feslaRed">100%</div>
-                                    <div class="text-xs text-feslaRed font-semibold mt-1">Burned Forever</div>
-                                </div>
-                                <div class="bg-feslaCard p-6 rounded-2xl border border-gray-800 text-center hover:border-feslaRed/50 transition">
-                                    <div class="text-gray-400 text-xs font-bold uppercase mb-1">CONTRACT OWNERSHIP</div>
-                                    <div class="text-3xl font-black text-white">RENOUNCED</div>
-                                    <div class="text-xs text-gray-300 font-semibold mt-1">100% Community-Owned</div>
-                                </div>
-                            </div>
-
-                            {/* Token Distribution Cards */}
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                <div class="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden group hover:border-feslaRed/50 transition">
-                                    <h3 class="text-xl font-bold text-white mb-2">Public Raydium Pool</h3>
-                                    <p class="text-sm text-gray-400 mb-4">80% of all tokens seeded directly into Raydium SOL liquidity pool with LP tokens burned on Solscan.</p>
-                                    <span class="inline-block px-3 py-1 bg-feslaRed/10 text-feslaRed text-xs font-mono rounded">80,000,000,000 $FESLA</span>
-                                </div>
-
-                                <div class="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden group hover:border-feslaRed/50 transition">
-                                    <h3 class="text-xl font-bold text-white mb-2">Supercharger Staking</h3>
-                                    <p class="text-sm text-gray-400 mb-4">Reserved as rewards for long-term drivers who park their tokens in our decentralized vaults.</p>
-                                    <span class="inline-block px-3 py-1 bg-white/10 text-white text-xs font-mono rounded">10,000,000,000 $FESLA</span>
-                                </div>
-
-                                <div class="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden group hover:border-feslaRed/50 transition">
-                                    <h3 class="text-xl font-bold text-white mb-2">Community Marketing</h3>
-                                    <p class="text-sm text-gray-400 mb-4">Dedicated vault for Solana ecosystem partnerships, DEX listings, and global meme campaigns.</p>
-                                    <span class="inline-block px-3 py-1 bg-feslaRed/10 text-feslaRed text-xs font-mono rounded">10,000,000,000 $FESLA</span>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* ROADMAP */}
-                    <section id="roadmap" class="py-24 bg-feslaDark border-t border-gray-800 px-6">
-                        <div class="max-w-4xl mx-auto space-y-12">
-                            <div class="text-center">
-                                <span class="text-feslaRed text-xs font-bold uppercase tracking-widest bg-feslaRed/10 border border-feslaRed/30 px-3 py-1 rounded-full">
-                                    Execution Blueprint
-                                </span>
-                                <h2 class="text-4xl font-black text-white mt-3">Master Plan Part 69</h2>
-                            </div>
-
-                            <div class="space-y-6">
-                                <div class="glass-panel p-6 rounded-2xl border border-gray-800 flex items-start space-x-4">
-                                    <div class="w-8 h-8 rounded-full bg-feslaRed text-white flex items-center justify-center font-bold text-sm shrink-0">1</div>
-                                    <div>
-                                        <h3 class="font-bold text-white text-lg">Phase 1: Gigafactory Mainnet Ignition</h3>
-                                        <p class="text-xs text-gray-400 mt-1">Deploy $FESLA SPL token on Solana, burn initial LP tokens, launch interactive configurator, and index on Solscan.</p>
-                                    </div>
-                                </div>
-
-                                <div class="glass-panel p-6 rounded-2xl border border-gray-800 flex items-start space-x-4">
-                                    <div class="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center font-bold text-sm shrink-0">2</div>
-                                    <div>
-                                        <h3 class="font-bold text-white text-lg">Phase 2: Supercharger Liquidity Network</h3>
-                                        <p class="text-xs text-gray-400 mt-1">List on CoinGecko & CoinMarketCap, initiate FSD trading telemetry, and host community spaces.</p>
-                                    </div>
-                                </div>
-
-                                <div class="glass-panel p-6 rounded-2xl border border-gray-800 flex items-start space-x-4">
-                                    <div class="w-8 h-8 rounded-full bg-feslaRed text-white flex items-center justify-center font-bold text-sm shrink-0">3</div>
-                                    <div>
-                                        <h3 class="font-bold text-white text-lg">Phase 3: Interplanetary Expansion</h3>
-                                        <p class="text-xs text-gray-400 mt-1">Centralized exchange listings, physical CyberMerch store, and Solana Pay integration for virtual Fesla test drives.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* FOOTER */}
-                    <footer class="bg-black py-12 px-6 border-t border-gray-900 text-xs text-gray-500">
-                        <div class="max-w-6xl mx-auto space-y-6">
-                            <div class="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-gray-800 pb-6">
-                                <div class="flex items-center space-x-2">
-                                    <span class="font-black text-white text-base tracking-widest">F E S L A</span>
-                                    <span>| Solana Meme Currency</span>
-                                </div>
-                                <div class="flex space-x-4 text-gray-400">
-                                    <a href="https://x.com" target="_blank" class="hover:text-white"><i data-lucide="twitter" class="w-4 h-4"></i></a>
-                                    <a href="https://telegram.org" target="_blank" class="hover:text-white"><i data-lucide="send" class="w-4 h-4"></i></a>
-                                    <a href="https://github.com" target="_blank" class="hover:text-white"><i data-lucide="github" class="w-4 h-4"></i></a>
-                                </div>
-                            </div>
-
-                            <p class="leading-relaxed text-[11px]">
-                                <strong>Disclaimer:</strong> $FESLA is a satirical parody currency on the Solana blockchain created for entertainment and utility demonstration purposes. It has no affiliation with Tesla, Inc. or Elon Musk. Cryptocurrencies are highly volatile; please conduct your own research before interacting with SPL tokens.
-                            </p>
-
-                            <div class="flex justify-between items-center text-[10px]">
-                                <span>© 2026 Fesla Motors Parody. Built on Solana.</span>
-                                <span>SPL Token Standard</span>
-                            </div>
-                        </div>
-                    </footer>
-
-                    {/* CUSTOMIZER MODAL */}
-                    {modalOpen && (
-                        <div class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                            <div class="bg-feslaDark border border-gray-800 w-full max-w-2xl rounded-2xl p-6 space-y-6 relative">
-                                <button 
-                                    onClick={() => setModalOpen(false)}
-                                    class="absolute top-4 right-4 text-gray-400 hover:text-white"
-                                >
-                                    <i data-lucide="x" class="w-5 h-5"></i>
-                                </button>
-
-                                <div>
-                                    <span class="text-xs font-mono text-feslaRed uppercase tracking-wider">Solana Configurator</span>
-                                    <h3 class="text-2xl font-bold text-white mt-1">Configure Your {selectedModel}</h3>
-                                </div>
-
-                                {/* Paint Selection */}
-                                <div>
-                                    <label class="text-xs text-gray-400 block mb-2 font-bold uppercase">Select Finish</label>
-                                    <div class="flex space-x-3">
-                                        <button onClick={() => setPaintColor("bg-feslaRed")} class={`w-8 h-8 rounded-full bg-feslaRed border-2 ${paintColor === 'bg-feslaRed' ? 'border-white ring-2 ring-feslaRed' : 'border-transparent'}`}></button>
-                                        <button onClick={() => setPaintColor("bg-blue-600")} class={`w-8 h-8 rounded-full bg-blue-600 border-2 ${paintColor === 'bg-blue-600' ? 'border-white ring-2 ring-blue-500' : 'border-transparent'}`}></button>
-                                        <button onClick={() => setPaintColor("bg-amber-400")} class={`w-8 h-8 rounded-full bg-amber-400 border-2 ${paintColor === 'bg-amber-400' ? 'border-white ring-2 ring-amber-400' : 'border-transparent'}`}></button>
-                                        <button onClick={() => setPaintColor("bg-gray-100")} class={`w-8 h-8 rounded-full bg-gray-100 border-2 ${paintColor === 'bg-gray-100' ? 'border-white ring-2 ring-white' : 'border-transparent'}`}></button>
-                                    </div>
-                                </div>
-
-                                {/* Addons */}
-                                <div class="space-y-2">
-                                    <label class="flex items-center justify-between p-3 rounded-lg border border-gray-800 bg-feslaCard cursor-pointer">
-                                        <div class="flex items-center space-x-2">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={fsdEnabled} 
-                                                onChange={(e) => setFsdEnabled(e.target.checked)}
-                                                class="accent-feslaRed rounded"
-                                            />
-                                            <span class="text-xs font-bold text-white">Full Self-Doge Beta</span>
-                                        </div>
-                                        <span class="text-xs text-feslaRed font-mono">+100k $FESLA</span>
-                                    </label>
-                                </div>
-
-                                <div class="border-t border-gray-800 pt-4 flex items-center justify-between">
-                                    <div>
-                                        <span class="text-xs text-gray-400 block">Total Price:</span>
-                                        <span class="text-lg font-black text-white font-mono">1,100,000 $FESLA</span>
-                                    </div>
-                                    <button 
-                                        onClick={triggerOrder}
-                                        class="bg-feslaRed hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-lg text-xs uppercase tracking-wider transition"
-                                    >
-                                        Confirm Reservation
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen overflow-x-hidden transition-colors duration-200 selection:bg-emerald-500/30">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- Loading Overlay untuk Sinkronisasi Google Sheets -->
+  <div id="sync-overlay" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-6 py-5 shadow-2xl flex items-center gap-3.5 animate-fade-up">
+      <div class="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin shrink-0"></div>
+      <div>
+        <p id="sync-overlay-text" class="font-display font-bold text-sm">Menghubungkan ke Google Sheets...</p>
+        <p class="text-[11px] text-slate-400">Mohon tunggu sebentar</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Confirmation Modal -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-fade-up">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+        </div>
+        <h3 id="confirm-title" class="font-display font-bold text-lg">Konfirmasi</h3>
+      </div>
+      <p id="confirm-message" class="text-sm text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+        Apakah Anda yakin ingin melanjutkan?
+      </p>
+      <div class="flex items-center justify-end gap-3">
+        <button id="confirm-cancel-btn" type="button" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">
+          Batal
+        </button>
+        <button id="confirm-ok-btn" type="button" class="px-4 py-2.5 rounded-xl text-sm font-semibold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/20 transition">
+          Ya, Lanjutkan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- LAYAR LOGIN MULTI-USER (ANNA & FACHRY + GOOGLE SHEETS CONNECTOR)        -->
+  <!-- ======================================================================= -->
+  <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-slate-50 dark:bg-slate-950">
+    <!-- Top Right Action Buttons -->
+    <div class="fixed top-4 right-4 flex items-center gap-2 z-20">
+      <button onclick="toggleTheme()" aria-label="Ganti Tema" class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+        <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
+        <i data-lucide="moon" class="w-4 h-4 block dark:hidden text-slate-700"></i>
+      </button>
+    </div>
+
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-8 shadow-xl animate-fade-up my-10">
+      <div class="flex flex-col items-center text-center mb-6">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/25 mb-3.5">
+          <i data-lucide="shield-check" class="w-7 h-7"></i>
+        </div>
+        <span class="px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mb-2">
+          Multi-User Sync • Anna & Fachry
+        </span>
+        <h1 class="font-display font-extrabold text-2xl sm:text-3xl tracking-tight">Masuk ke SakuAman</h1>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+          Kelola batas aman gajian bersama atau pribadi yang tersinkron dengan Google Spreadsheet.
+        </p>
+      </div>
+
+      <!-- Quick Pick User Pills -->
+      <div class="grid grid-cols-2 gap-2.5 mb-5">
+        <button type="button" onclick="quickFillUser('anna')" class="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 hover:border-emerald-500/60 flex items-center gap-2.5 transition text-left min-h-[48px]">
+          <div class="w-8 h-8 rounded-xl bg-pink-500/15 text-pink-500 font-display font-extrabold text-xs flex items-center justify-center shrink-0">AN</div>
+          <div class="min-w-0">
+            <p class="text-xs font-bold truncate">Anna</p>
+            <p class="text-[10px] text-slate-400 truncate">@anna</p>
+          </div>
+        </button>
+
+        <button type="button" onclick="quickFillUser('fachry')" class="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 hover:border-emerald-500/60 flex items-center gap-2.5 transition text-left min-h-[48px]">
+          <div class="w-8 h-8 rounded-xl bg-blue-500/15 text-blue-500 font-display font-extrabold text-xs flex items-center justify-center shrink-0">FA</div>
+          <div class="min-w-0">
+            <p class="text-xs font-bold truncate">Fachry</p>
+            <p class="text-[10px] text-slate-400 truncate">@fachry</p>
+          </div>
+        </button>
+      </div>
+
+      <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Username</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input
+              type="text"
+              id="login-username"
+              placeholder="anna atau fachry"
+              autocomplete="username"
+              class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 transition min-h-[44px]"
+              required
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Password</label>
+          <div class="relative">
+            <i data-lucide="key-round" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input
+              type="password"
+              id="login-password"
+              placeholder="Masukkan password (default: 251026)"
+              autocomplete="current-password"
+              class="w-full pl-10 pr-11 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 transition min-h-[44px]"
+              required
+            />
+            <button type="button" onclick="togglePasswordVisibility('login-password')" class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Konfigurasi URL Google Apps Script (Opsional / Tersimpan Otomatis) -->
+        <div class="pt-1">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+              <i data-lucide="sheet" class="w-3.5 h-3.5 text-emerald-500"></i>
+              <span>URL Web App Google Sheets</span>
+            </label>
+          </div>
+          <input
+            type="url"
+            id="login-gas-url" value="https://script.google.com/macros/s/AKfycbwscJskNBB93sXjr--yMaqyHAOC_DdMa2p7We8dXpfyGUjL1JROSaTmIuyA-e6HCzRD8A/exec"
+            placeholder="https://script.google.com/macros/s/.../exec (Kosongkan = Mode Lokal)"
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 transition min-h-[42px]"
+          />
+          <p class="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+            Biarkan kosong untuk langsung mencoba di <strong>Mode Lokal</strong>, atau tempel URL Apps Script untuk sinkronisasi langsung ke Spreadsheet.
+          </p>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold text-sm sm:text-base shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 transition active:scale-[0.99] min-h-[48px]">
+          <span>Masuk ke Dashboard</span>
+          <i data-lucide="log-in" class="w-4 h-4"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- LAYAR ONBOARDING WAJIB (ZERO-STATE SETUP PER USER)                      -->
+  <!-- ======================================================================= -->
+  <div id="onboarding-screen" class="hidden min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-slate-50 dark:bg-slate-950">
+    <!-- Top Bar on Onboarding -->
+    <div class="fixed top-4 inset-x-4 flex items-center justify-between max-w-md mx-auto">
+      <button onclick="handleLogout()" class="px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 shadow-sm flex items-center gap-1.5">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+        <span>Ganti Akun</span>
+      </button>
+      <button onclick="toggleTheme()" aria-label="Ganti Tema" class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+        <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
+        <i data-lucide="moon" class="w-4 h-4 block dark:hidden text-slate-700"></i>
+      </button>
+    </div>
+
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl animate-fade-up">
+      <!-- Brand Header -->
+      <div class="flex flex-col items-center text-center mb-7">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/25 mb-4">
+          <i data-lucide="shield-check" class="w-7 h-7"></i>
+        </div>
+        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mb-2">
+          Halo, <span id="onboard-user-name">User</span> • Mulai dari Rp 0
+        </span>
+        <h1 class="font-display font-extrabold text-2xl sm:text-3xl tracking-tight">Atur Gaji & Jadwalmu</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+          Data saldomu masih Rp 0. Isi nominal gaji dan tanggal gajian berikutnya agar batas aman harianmu langsung aktif.
+        </p>
+      </div>
+
+      <!-- Form Setup Awal -->
+      <form id="onboarding-form" onsubmit="completeOnboarding(event)" class="space-y-5">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
+            1. Nominal Gaji / Saldo Saat Ini
+          </label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
+            <input
+              type="text"
+              id="onboard-salary"
+              inputmode="numeric"
+              placeholder="0"
+              oninput="formatCurrencyInput(this)"
+              class="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-lg font-display font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+              required
+            />
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1.5">Contoh: ketik 2000000 akan otomatis menjadi 2.000.000</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
+            2. Tanggal Gajian Berikutnya
+          </label>
+          <input
+            type="date"
+            id="onboard-payday"
+            class="w-full px-4 py-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+            required
+          />
+          <p class="text-[11px] text-slate-400 mt-1.5">Default diarahkan ke tanggal 25 terdekat, silakan ubah jika berbeda.</p>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold text-sm sm:text-base shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 transition active:scale-[0.99] mt-2 min-h-[48px]">
+          <span>Simpan & Mulai Catat</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- APLIKASI UTAMA (SIDEBAR DESKTOP + BOTTOM NAV MOBILE + 4 HALAMAN TAB)   -->
+  <!-- ======================================================================= -->
+  <div id="main-app" class="hidden min-h-screen flex flex-col lg:flex-row">
+
+    <!-- DESKTOP SIDEBAR -->
+    <aside class="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800/80 z-30">
+      <!-- Logo -->
+      <div class="h-16 px-6 flex items-center gap-3 border-b border-slate-100 dark:border-slate-800/80">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+          <i data-lucide="shield-check" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="font-display font-extrabold text-lg tracking-tight block leading-none">SakuAman</span>
+          <span class="text-[11px] text-slate-400 font-medium">Sheets Multi-User</span>
+        </div>
+      </div>
+
+      <!-- Active User Profile Card in Sidebar -->
+      <div class="px-4 pt-4">
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div id="sidebar-user-avatar" class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-display font-extrabold text-xs flex items-center justify-center shrink-0">
+              AN
+            </div>
+            <div class="min-w-0">
+              <p id="sidebar-user-name" class="text-xs font-bold truncate">Anna</p>
+              <p id="sidebar-conn-badge" class="text-[10px] font-medium text-emerald-500 truncate">Mode Lokal</p>
+            </div>
+          </div>
+          <button onclick="syncFromGoogleSheets(true)" title="Sinkronkan Data" class="p-2 rounded-lg text-slate-400 hover:text-emerald-500 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Links (4 Tab Terpisah) -->
+      <nav class="flex-1 px-3 py-4 space-y-1.5">
+        <button onclick="switchTab('expenses')" data-nav="expenses" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition">
+          <i data-lucide="wallet" class="w-4 h-4"></i>
+          <span>Pengeluaran</span>
+        </button>
+
+        <button onclick="switchTab('analytics')" data-nav="analytics" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+          <span>Grafik & Analisa</span>
+        </button>
+
+        <button onclick="switchTab('simulator')" data-nav="simulator" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition">
+          <i data-lucide="calculator" class="w-4 h-4"></i>
+          <span>Simulator & Dana Kunci</span>
+        </button>
+
+        <button onclick="switchTab('settings')" data-nav="settings" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition">
+          <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+          <span>Pemasukan & Akun</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Footer: Theme Toggle & Logout -->
+      <div class="p-4 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
+        <button onclick="toggleTheme()" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          <span class="flex items-center gap-2">
+            <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
+            <i data-lucide="moon" class="w-4 h-4 block dark:hidden text-slate-600"></i>
+            <span class="dark:hidden">Mode Gelap</span>
+            <span class="hidden dark:inline">Mode Terang</span>
+          </span>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-slate-200/70 dark:bg-slate-800 text-slate-500">Ganti</span>
+        </button>
+
+        <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-600 hover:text-white text-xs font-bold transition">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          <span>Keluar / Ganti Akun</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MOBILE TOP BAR (Super Responsif & Informatif) -->
+    <header class="lg:hidden sticky top-0 z-30 h-14 px-3.5 sm:px-5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shrink-0">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5">
+            <span class="font-display font-extrabold text-sm tracking-tight">SakuAman</span>
+            <span id="mobile-user-pill" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 truncate">
+              Anna
+            </span>
+          </div>
+          <p id="mobile-conn-status" class="text-[10px] text-slate-400 leading-none mt-0.5 truncate">Mode Lokal</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button onclick="syncFromGoogleSheets(true)" aria-label="Sinkronkan" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 active:scale-95 transition">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        </button>
+        <button onclick="toggleTheme()" aria-label="Ganti Tema" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 active:scale-95 transition">
+          <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
+          <i data-lucide="moon" class="w-4 h-4 block dark:hidden text-slate-700"></i>
+        </button>
+        <button onclick="handleLogout()" aria-label="Keluar" class="p-2 rounded-xl bg-rose-500/10 text-rose-500 active:scale-95 transition">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 lg:pl-64 pb-28 lg:pb-12">
+      <div class="max-w-4xl mx-auto px-3.5 sm:px-6 lg:px-8 py-5 sm:py-8">
+
+        <!-- ================================================================= -->
+        <!-- TAB 1: PENGELUARAN (TAMPILAN UTAMA / DEFAULT)                     -->
+        <!-- ================================================================= -->
+        <section id="tab-expenses" class="tab-view space-y-5 sm:space-y-6 animate-fade-up">
+          <!-- Header Halaman -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h1 class="font-display font-extrabold text-xl sm:text-2xl tracking-tight">Pengeluaran Harian</h1>
+              <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                Akun aktif: <strong id="exp-active-user-label" class="text-slate-800 dark:text-slate-200">Anna</strong> • Sheet Bulanan: <code id="exp-sheet-month-badge" class="text-[11px] px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-800 font-mono">ANNA_2026-11</code>
+              </p>
+            </div>
+            <div class="text-xs font-medium text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 self-start sm:self-auto">
+              Hari ini: <strong id="header-today-date" class="text-slate-800 dark:text-slate-200">-</strong>
+            </div>
+          </div>
+
+          <!-- 3 KARTU RINGKAS UTAMA (Responsive Grid: 1 col HP, 3 col Tablet/Desktop) -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
+            <!-- Kartu 1: Batas Aman Hari Ini -->
+            <div class="rounded-2xl bg-slate-900 dark:bg-slate-900 text-white p-4 sm:p-5 border border-slate-800 shadow-md">
+              <div class="flex items-center justify-between mb-1.5 sm:mb-2">
+                <span class="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Batas Aman Hari Ini</span>
+                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+              </div>
+              <div id="card-daily-limit" class="font-display font-extrabold text-2xl sm:text-2xl md:text-3xl text-emerald-400 tracking-tight tabular-nums break-words">
+                Rp 0
+              </div>
+              <div class="mt-3 pt-2.5 border-t border-slate-800 flex items-center justify-between text-xs">
+                <span class="text-slate-400">Sisa limit hari ini:</span>
+                <span id="card-today-remaining" class="font-bold text-white tabular-nums">Rp 0</span>
+              </div>
+            </div>
+
+            <!-- Kartu 2: Sisa Saldo Aktif -->
+            <div class="rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center justify-between mb-1.5 sm:mb-2">
+                <span class="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sisa Saldo Aktif</span>
+                <i data-lucide="wallet" class="w-4 h-4 text-blue-500 shrink-0"></i>
+              </div>
+              <div id="card-active-balance" class="font-display font-extrabold text-2xl sm:text-2xl md:text-3xl tracking-tight tabular-nums break-words">
+                Rp 0
+              </div>
+              <div class="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span>Terpakai hari ini:</span>
+                <span id="card-today-spent" class="font-semibold text-rose-500 tabular-nums">Rp 0</span>
+              </div>
+            </div>
+
+            <!-- Kartu 3: Hitung Mundur Gajian -->
+            <div class="rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center justify-between mb-1.5 sm:mb-2">
+                <span class="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Menuju Gajian</span>
+                <i data-lucide="calendar-clock" class="w-4 h-4 text-purple-500 shrink-0"></i>
+              </div>
+              <div class="flex items-baseline gap-1.5">
+                <span id="card-days-left" class="font-display font-extrabold text-2xl sm:text-2xl md:text-3xl tracking-tight tabular-nums">0</span>
+                <span class="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400">Hari Lagi</span>
+              </div>
+              <div class="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span>Tanggal gajian:</span>
+                <span id="card-payday-date" class="font-semibold text-slate-700 dark:text-slate-200">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- BANNER PERINGATAN BATAS AMAN -->
+          <div id="safe-status-banner" class="rounded-2xl p-3.5 sm:p-4 border flex items-center gap-3 sm:gap-3.5 transition-all">
+            <div id="safe-banner-icon" class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
+              <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <h2 id="safe-banner-title" class="font-display font-bold text-sm sm:text-base">Aman! Pengeluaran Terkendali</h2>
+              <p id="safe-banner-desc" class="text-xs opacity-90 mt-0.5 leading-relaxed">Pengeluaran hari ini masih di bawah batas aman harian.</p>
+            </div>
+          </div>
+
+          <!-- FORM CATAT PENGELUARAN CEPAT & SIMPEL -->
+          <div class="rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between gap-2 mb-4">
+              <h3 class="font-display font-bold text-base flex items-center gap-2">
+                <i data-lucide="plus-circle" class="w-4 h-4 text-rose-500"></i>
+                <span>Catat Pengeluaran Baru</span>
+              </h3>
+              <span id="form-recording-as" class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                Oleh: Anna
+              </span>
+            </div>
+
+            <form id="quick-expense-form" onsubmit="handleAddExpense(event)" class="space-y-4">
+              <!-- Baris 1: Nominal & Catatan -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Nominal Pengeluaran</label>
+                  <div class="relative">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
+                    <input
+                      type="text"
+                      id="exp-amount"
+                      inputmode="numeric"
+                      placeholder="0"
+                      oninput="formatCurrencyInput(this)"
+                      class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-base font-display font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 transition min-h-[46px]"
+                      required
+                    />
+                  </div>
                 </div>
-            );
+
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Catatan Singkat</label>
+                  <input
+                    type="text"
+                    id="exp-note"
+                    placeholder="Contoh: Makan siang, Kopi, Bensin..."
+                    class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition min-h-[46px]"
+                    required
+                  />
+                </div>
+              </div>
+
+              <!-- Baris 2: Pilihan Kategori Pill / Tombol Cepat -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">Pilih Kategori</label>
+                <input type="hidden" id="exp-category" value="Makan & Minum" />
+                <div id="category-pills" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <!-- Rendered via JS -->
+                </div>
+              </div>
+
+              <!-- Baris 3: Tanggal & Tombol Submit -->
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+                <div class="flex items-center gap-2">
+                  <label for="exp-date" class="text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0">Tanggal:</label>
+                  <input
+                    type="date"
+                    id="exp-date"
+                    class="w-full sm:w-auto px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[42px]"
+                    required
+                  />
+                </div>
+
+                <button type="submit" class="py-3 px-6 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-sm shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2 transition active:scale-[0.99] min-h-[46px]">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                  <span>+ Catat Pengeluaran</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- DAFTAR RIWAYAT PENGELUARAN TERBARU (Bisa Filter Akun & Kategori) -->
+          <div class="rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 class="font-display font-bold text-base">Riwayat Pengeluaran</h3>
+                <p id="expense-list-subtitle" class="text-xs text-slate-500 dark:text-slate-400">Belum ada transaksi tercatat</p>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <!-- Filter User (Saya vs Semua) -->
+                <select id="expense-filter-user" onchange="renderExpenseList()" class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[38px]">
+                  <option value="CURRENT">Akun Saya Saja</option>
+                  <option value="ALL">Semua (Anna & Fachry)</option>
+                  <option value="anna">Khusus Anna</option>
+                  <option value="fachry">Khusus Fachry</option>
+                </select>
+
+                <!-- Filter Kategori -->
+                <select id="expense-filter-cat" onchange="renderExpenseList()" class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[38px]">
+                  <option value="ALL">Semua Kategori</option>
+                  <option value="Makan & Minum">Makan & Minum</option>
+                  <option value="Transportasi">Transportasi</option>
+                  <option value="Belanja">Belanja</option>
+                  <option value="Tagihan">Tagihan</option>
+                  <option value="Hiburan">Hiburan</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="expense-list-container" class="divide-y divide-slate-100 dark:divide-slate-800/80">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 2: GRAFIK & ANALISA KEBOROSAN                                 -->
+        <!-- ================================================================= -->
+        <section id="tab-analytics" class="tab-view hidden space-y-5 sm:space-y-6 animate-fade-up">
+          <div>
+            <h1 class="font-display font-extrabold text-xl sm:text-2xl tracking-tight">Grafik & Analisa Keborosan</h1>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Evaluasi pola belanja personal maupun rekap gabungan Anna & Fachry.</p>
+          </div>
+
+          <!-- Ringkasan Rekap Master Gabungan (Anna vs Fachry) -->
+          <div class="rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-display font-bold text-sm sm:text-base flex items-center gap-2">
+                <i data-lucide="users" class="w-4 h-4 text-emerald-500"></i>
+                <span>Rekap Master Gabungan (Bulan Ini)</span>
+              </h3>
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">MASTER_REKAP</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="p-3.5 rounded-xl bg-pink-500/5 border border-pink-500/20">
+                <span class="text-[11px] font-semibold text-pink-600 dark:text-pink-400">Total Pengeluaran Anna</span>
+                <p id="master-anna-expense" class="font-display font-extrabold text-lg sm:text-xl mt-1 tabular-nums">Rp 0</p>
+              </div>
+              <div class="p-3.5 rounded-xl bg-blue-500/5 border border-blue-500/20">
+                <span class="text-[11px] font-semibold text-blue-600 dark:text-blue-400">Total Pengeluaran Fachry</span>
+                <p id="master-fachry-expense" class="font-display font-extrabold text-lg sm:text-xl mt-1 tabular-nums">Rp 0</p>
+              </div>
+              <div class="p-3.5 rounded-xl bg-slate-100/80 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Total Gabungan Berdua</span>
+                <p id="master-combined-expense" class="font-display font-extrabold text-lg sm:text-xl mt-1 tabular-nums">Rp 0</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Skor Kesehatan Keuangan + Analisa Keborosan -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <!-- Skor Kesehatan (0-100) -->
+            <div class="md:col-span-5 rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+              <div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Skor Kesehatan (<span id="ana-score-username">Anna</span>)</span>
+                <div class="mt-3 flex items-baseline gap-2">
+                  <span id="ana-health-score" class="font-display font-extrabold text-4xl sm:text-5xl text-emerald-500 tabular-nums">100</span>
+                  <span class="text-sm font-semibold text-slate-400">/ 100</span>
+                </div>
+                <span id="ana-health-badge" class="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500">
+                  Sangat Sehat
+                </span>
+              </div>
+              <p id="ana-health-desc" class="text-xs text-slate-500 dark:text-slate-400 mt-4 leading-relaxed">
+                Belum ada pengeluaran. Pertahankan disiplin sesuai batas aman harianmu!
+              </p>
+            </div>
+
+            <!-- 3 Indikator Analisa Keborosan -->
+            <div class="md:col-span-7 rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <h3 class="font-display font-bold text-sm sm:text-base flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
+                <span>Deteksi Keborosan Otomatis</span>
+              </h3>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                  <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Kategori Paling Boros</span>
+                  <p id="ana-top-cat" class="font-display font-bold text-sm sm:text-base mt-0.5 truncate">-</p>
+                  <p id="ana-top-cat-detail" class="text-xs text-slate-500 mt-0.5 tabular-nums">Rp 0 (0%)</p>
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                  <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Estimasi Saldo Habis</span>
+                  <p id="ana-zero-date" class="font-display font-bold text-sm sm:text-base mt-0.5 text-emerald-500">Aman s/d Gajian</p>
+                  <p id="ana-zero-detail" class="text-xs text-slate-500 mt-0.5">Berdasarkan laju belanja saat ini</p>
+                </div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Rata-rata Pengeluaran vs Batas Aman</span>
+                  <p id="ana-avg-vs-limit" class="font-display font-bold text-xs sm:text-sm mt-0.5 tabular-nums">Rp 0 / hari vs Rp 0 / hari</p>
+                </div>
+                <span id="ana-burn-badge" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-500 self-start sm:self-auto shrink-0">
+                  Terkendali
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2 Grafik Chart.js -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+            <!-- Grafik Batang: Pengeluaran 7 Hari Terakhir vs Garis Batas Aman -->
+            <div class="lg:col-span-7 rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="font-display font-bold text-base">Pengeluaran 7 Hari Terakhir</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">Dibandingkan garis batas aman harian</p>
+                </div>
+              </div>
+              <div class="relative h-60 sm:h-64 w-full">
+                <canvas id="barTrendChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Grafik Donat: Proporsi per Kategori -->
+            <div class="lg:col-span-5 rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div class="mb-4">
+                <h3 class="font-display font-bold text-base">Proporsi Kategori</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Pos pengeluaran terbesar</p>
+              </div>
+              <div class="relative h-60 sm:h-64 w-full flex items-center justify-center">
+                <canvas id="doughnutCategoryChart"></canvas>
+                <div id="doughnut-empty-state" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <i data-lucide="pie-chart" class="w-8 h-8 text-slate-300 dark:text-slate-700 mb-2"></i>
+                  <p class="text-xs text-slate-400">Belum ada data pengeluaran</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 3: SIMULATOR & DANA KUNCI                                     -->
+        <!-- ================================================================= -->
+        <section id="tab-simulator" class="tab-view hidden space-y-5 sm:space-y-6 animate-fade-up">
+          <div>
+            <h1 class="font-display font-extrabold text-xl sm:text-2xl tracking-tight">Simulator Belanja & Dana Kunci</h1>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Simulasikan dampak pembelian barang terhadap batas aman harianmu, atau kunci sebagian saldo agar tidak terpakai.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+            <!-- Simulator What-If -->
+            <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
+                  <i data-lucide="calculator" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-display font-bold text-base">Simulator "Kalau Beli Ini..."</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">Cek apakah pengeluaran mendadak masih aman sampai gajian.</p>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Harga Barang / Rencana Pengeluaran</label>
+                <div class="relative">
+                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
+                  <input
+                    type="text"
+                    id="sim-item-price"
+                    inputmode="numeric"
+                    placeholder="0"
+                    oninput="formatCurrencyInput(this); updateWhatIfSimulator();"
+                    class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-base font-display font-bold focus:outline-none focus:ring-2 focus:ring-purple-500 transition min-h-[46px]"
+                  />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3 pt-1">
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                  <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Batas Saat Ini</span>
+                  <span id="sim-before-limit" class="font-display font-bold text-sm text-slate-800 dark:text-slate-200 tabular-nums mt-0.5 block">Rp 0 / hari</span>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                  <span class="text-[11px] text-slate-500 dark:text-slate-400 block">Batas Setelah Beli</span>
+                  <span id="sim-after-limit" class="font-display font-bold text-sm text-emerald-500 tabular-nums mt-0.5 block">Rp 0 / hari</span>
+                </div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/20">
+                <p id="sim-verdict-text" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                  Masukkan harga barang di atas untuk melihat apakah pembelian tersebut masih aman untuk sisa harimu.
+                </p>
+              </div>
+            </div>
+
+            <!-- Dana Kunci (Locked Savings) -->
+            <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                  <i data-lucide="lock" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-display font-bold text-base">Dana Kunci (Tabungan Aman)</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">Sisihkan saldo agar tidak ikut terhitung dalam jatah harian.</p>
+                </div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
+                <span class="text-xs font-semibold text-amber-800 dark:text-amber-200">Total Dana Terkunci:</span>
+                <span id="lock-current-display" class="font-display font-extrabold text-base text-amber-600 dark:text-amber-400 tabular-nums">Rp 0</span>
+              </div>
+
+              <form onsubmit="handleUpdateLockedSavings(event)" class="space-y-3.5">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Nominal Dana yang Dikunci</label>
+                  <div class="relative">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
+                    <input
+                      type="text"
+                      id="lock-amount-input"
+                      inputmode="numeric"
+                      placeholder="0"
+                      oninput="formatCurrencyInput(this)"
+                      class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-base font-display font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 transition min-h-[46px]"
+                    />
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  <button type="submit" class="flex-1 py-3 px-4 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-display font-bold text-sm shadow-lg shadow-amber-600/20 flex items-center justify-center gap-2 transition min-h-[46px]">
+                    <i data-lucide="lock" class="w-4 h-4"></i>
+                    <span>Simpan Dana Kunci</span>
+                  </button>
+                  <button type="button" id="btn-unlock-savings" onclick="unlockAllSavings()" class="hidden py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold transition min-h-[46px]">
+                    Cairkan
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 4: PEMASUKAN, AKUN & PENGATURAN BACKEND                       -->
+        <!-- ================================================================= -->
+        <section id="tab-settings" class="tab-view hidden space-y-5 sm:space-y-6 animate-fade-up">
+          <div>
+            <h1 class="font-display font-extrabold text-xl sm:text-2xl tracking-tight">Pemasukan, Akun & Backend</h1>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Tambah pemasukan ekstra, ubah gaji/tanggal gajian, ganti password, atau hubungkan Google Spreadsheet.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+            <!-- Tambah Pemasukan Tambahan / Bonus -->
+            <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                  <i data-lucide="banknote" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-display font-bold text-base">Tambah Pemasukan Ekstra</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">Bonus, freelance, atau uang tambahan di luar gaji pokok.</p>
+                </div>
+              </div>
+
+              <form onsubmit="handleAddExtraIncome(event)" class="space-y-3.5">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Nominal Pemasukan</label>
+                  <div class="relative">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
+                    <input
+                      type="text"
+                      id="inc-amount"
+                      inputmode="numeric"
+                      placeholder="0"
+                      oninput="formatCurrencyInput(this)"
+                      class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-base font-display font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 transition min-h-[46px]"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Sumber Pemasukan</label>
+                  <input
+                    type="text"
+                    id="inc-note"
+                    placeholder="Contoh: Bonus proyek, Cashback, Transferan..."
+                    class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition min-h-[46px]"
+                    required
+                  />
+                </div>
+
+                <button type="submit" class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold text-sm shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition min-h-[46px]">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                  <span>Tambahkan ke Saldo Aktif</span>
+                </button>
+              </form>
+
+              <!-- Daftar Pemasukan Tambahan (jika ada) -->
+              <div id="extra-income-list" class="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2"></div>
+            </div>
+
+            <!-- Ubah Gaji Awal & Tanggal Gajian -->
+            <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                  <i data-lucide="calendar-cog" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-display font-bold text-base">Gaji Pokok & Tanggal Gajian</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">Sesuaikan nominal gaji awal atau tanggal gajian berikutnya.</p>
+                </div>
+              </div>
+
+              <form onsubmit="handleUpdateMainSettings(event)" class="space-y-3.5">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Nominal Gaji / Saldo Awal</label>
+                  <div class="relative">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
+                    <input
+                      type="text"
+                      id="set-initial-salary"
+                      inputmode="numeric"
+                      placeholder="0"
+                      oninput="formatCurrencyInput(this)"
+                      class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-base font-display font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition min-h-[46px]"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Tanggal Gajian Berikutnya</label>
+                  <input
+                    type="date"
+                    id="set-payday-date"
+                    class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 transition min-h-[46px]"
+                    required
+                  />
+                </div>
+
+                <button type="submit" class="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-display font-bold text-sm shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition min-h-[46px]">
+                  <i data-lucide="save" class="w-4 h-4"></i>
+                  <span>Simpan Perubahan</span>
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Keamanan Akun (Ganti Password) & Koneksi Google Sheets -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+            <!-- Ganti Password -->
+            <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                  <i data-lucide="key-round" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-display font-bold text-base">Ganti Password Akun</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">Password juga bisa diubah langsung di kolom B sheet <code>USERS</code>.</p>
+                </div>
+              </div>
+
+              <form onsubmit="handleChangePassword(event)" class="space-y-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Password Baru</label>
+                  <input
+                    type="password"
+                    id="set-new-password"
+                    placeholder="Masukkan password baru"
+                    class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition min-h-[44px]"
+                    required
+                  />
+                </div>
+                <button type="submit" class="w-full py-3 px-4 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-display font-bold text-sm shadow-lg shadow-amber-600/20 flex items-center justify-center gap-2 transition min-h-[44px]">
+                  <i data-lucide="check" class="w-4 h-4"></i>
+                  <span>Perbarui Password</span>
+                </button>
+              </form>
+            </div>
+
+            <!-- Koneksi Google Spreadsheet -->
+            <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                  <i data-lucide="sheet" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-display font-bold text-base">Koneksi Google Spreadsheet</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">Atur URL Web App Google Apps Script & salin kode backend.</p>
+                </div>
+              </div>
+
+              <form onsubmit="handleSaveGasUrl(event)" class="space-y-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">URL Web App Apps Script</label>
+                  <input
+                    type="url"
+                    id="set-gas-url" value="https://script.google.com/macros/s/AKfycbwscJskNBB93sXjr--yMaqyHAOC_DdMa2p7We8dXpfyGUjL1JROSaTmIuyA-e6HCzRD8A/exec"
+                    placeholder="https://script.google.com/macros/s/.../exec"
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 transition min-h-[44px]"
+                  />
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button type="submit" class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold text-xs sm:text-sm transition min-h-[42px]">
+                    Simpan URL & Sync
+                  </button>
+                      </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Manajemen Data: Export CSV & Reset ke 0 -->
+          <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 class="font-display font-bold text-base">Ekspor & Reset Data</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Unduh riwayat transaksimu atau ulangi akun ini dari Rp 0.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <button type="button" onclick="exportToCSV()" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 flex items-center gap-2 transition min-h-[42px]">
+                <i data-lucide="download" class="w-4 h-4 text-emerald-500"></i>
+                <span>Ekspor CSV</span>
+              </button>
+
+              <button type="button" onclick="promptResetToZero()" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-rose-500/10 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-500/20 flex items-center gap-2 transition min-h-[42px]">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                <span>Reset Akun ke Rp 0</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- MOBILE BOTTOM NAVIGATION BAR (4 Tab Terpisah + Safe Area Padding) -->
+    <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-safe">
+      <div class="grid grid-cols-4 h-16 px-1">
+        <button onclick="switchTab('expenses')" data-nav="expenses" class="mobile-nav-btn flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition">
+          <i data-lucide="wallet" class="w-4 h-4"></i>
+          <span>Pengeluaran</span>
+        </button>
+
+        <button onclick="switchTab('analytics')" data-nav="analytics" class="mobile-nav-btn flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+          <span>Analisa</span>
+        </button>
+
+        <button onclick="switchTab('simulator')" data-nav="simulator" class="mobile-nav-btn flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition">
+          <i data-lucide="calculator" class="w-4 h-4"></i>
+          <span>Simulator</span>
+        </button>
+
+        <button onclick="switchTab('settings')" data-nav="settings" class="mobile-nav-btn flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition">
+          <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+          <span>Akun & Sheet</span>
+        </button>
+      </div>
+    </nav>
+
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. KONFIGURASI MULTI-USER (ANNA & FACHRY) + GOOGLE APPS SCRIPT BACKEND
+    // =========================================================================
+    const STORAGE_KEY = 'sakuaman_sheets_v3';
+
+    const EXPENSE_CATEGORIES = [
+      { id: 'Makan & Minum', label: 'Makan & Minum', icon: 'utensils', color: '#10b981', pillBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
+      { id: 'Transportasi', label: 'Transportasi', icon: 'car', color: '#3b82f6', pillBg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
+      { id: 'Belanja', label: 'Belanja', icon: 'shopping-bag', color: '#ec4899', pillBg: 'bg-pink-500/10 text-pink-600 dark:text-pink-400' },
+      { id: 'Tagihan', label: 'Tagihan', icon: 'zap', color: '#8b5cf6', pillBg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400' },
+      { id: 'Hiburan', label: 'Hiburan', icon: 'coffee', color: '#f59e0b', pillBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+      { id: 'Lainnya', label: 'Lainnya', icon: 'package', color: '#64748b', pillBg: 'bg-slate-500/10 text-slate-600 dark:text-slate-400' }
+    ];
+
+    function getLocalDateString(offsetDays = 0) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function getDefaultNextPayday() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const day = today.getDate();
+
+      let target = new Date(year, month, 25);
+      if (day >= 25) {
+        target = new Date(year, month + 1, 25);
+      }
+      const y = target.getFullYear();
+      const m = String(target.getMonth() + 1).padStart(2, '0');
+      const d = String(target.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    // State Awal Multi-User (Mulai dari 0 untuk masing-masing Anna & Fachry)
+    function createZeroState() {
+      return {
+        currentUser: null, // 'anna' | 'fachry' | null
+        gasUrl: 'https://script.google.com/macros/s/AKfycbwscJskNBB93sXjr--yMaqyHAOC_DdMa2p7We8dXpfyGUjL1JROSaTmIuyA-e6HCzRD8A/exec',
+        users: {
+          anna: {
+            username: 'anna',
+            password: '251026',
+            name: 'Anna',
+            initialSalary: 0,
+            paydayDate: getDefaultNextPayday(),
+            lockedSavings: 0
+          },
+          fachry: {
+            username: 'fachry',
+            password: '251026',
+            name: 'Fachry',
+            initialSalary: 0,
+            paydayDate: getDefaultNextPayday(),
+            lockedSavings: 0
+          }
+        },
+        transactions: [],
+        theme: 'light'
+      };
+    }
+
+    let state = loadState();
+    let activeTab = 'expenses';
+    let selectedCategory = 'Makan & Minum';
+    let barChartInstance = null;
+    let doughnutChartInstance = null;
+
+    // =========================================================================
+    // 2. PERSISTENCE, GOOGLE SHEETS API CLIENT & HELPERS
+    // =========================================================================
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return createZeroState();
+        const parsed = JSON.parse(raw);
+        const base = createZeroState();
+        return {
+          ...base,
+          ...parsed,
+          users: {
+            anna: { ...base.users.anna, ...(parsed.users?.anna || {}) },
+            fachry: { ...base.users.fachry, ...(parsed.users?.fachry || {}) }
+          }
+        };
+      } catch (err) {
+        return createZeroState();
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (err) {
+        showToast('Gagal menyimpan data lokal.', 'error');
+      }
+    }
+
+    function setSyncLoading(show, text = 'Menghubungkan ke Google Sheets...') {
+      const overlay = document.getElementById('sync-overlay');
+      document.getElementById('sync-overlay-text').textContent = text;
+      if (show) {
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+      } else {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+      }
+    }
+
+    // Kirim request ke Google Apps Script Web App (menggunakan text/plain agar bebas CORS preflight)
+    async function callGasApi(payload, loadingText = 'Menyinkronkan ke Google Sheets...') {
+      if (!state.gasUrl) return null;
+      setSyncLoading(true, loadingText);
+      try {
+        const res = await fetch(state.gasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        setSyncLoading(false);
+        return data;
+      } catch (err) {
+        setSyncLoading(false);
+        throw err;
+      }
+    }
+
+    async function syncFromGoogleSheets(showNotification = false) {
+      if (!state.gasUrl) {
+        if (showNotification) showToast('Saat ini menggunakan Mode Lokal. Isi URL Apps Script di menu Akun & Sheet.', 'warning');
+        return;
+      }
+      try {
+        const res = await callGasApi({ action: 'getData' }, 'Mengambil data terbaru dari Spreadsheet...');
+        if (res && res.status === 'ok') {
+          if (res.users) {
+            Object.keys(res.users).forEach(k => {
+              if (state.users[k]) {
+                state.users[k] = { ...state.users[k], ...res.users[k] };
+              }
+            });
+          }
+          if (Array.isArray(res.transactions)) {
+            state.transactions = res.transactions;
+          }
+          saveState();
+          checkAppEntry();
+          if (showNotification) showToast('Berhasil sinkronisasi dengan Google Sheets!', 'success');
+        }
+      } catch (err) {
+        if (showNotification) showToast('Gagal terhubung ke URL Apps Script. Periksa koneksi / izin deployment.', 'error');
+      }
+    }
+
+    function formatRupiah(num) {
+      const isNeg = num < 0;
+      const abs = Math.round(Math.abs(num || 0));
+      const str = abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      return `${isNeg ? '-' : ''}Rp ${str}`;
+    }
+
+    function parseRupiah(val) {
+      if (typeof val === 'number') return val;
+      const clean = String(val || '').replace(/[^0-9]/g, '');
+      return clean ? parseInt(clean, 10) : 0;
+    }
+
+    function formatCurrencyInput(el) {
+      const num = parseRupiah(el.value);
+      el.value = num > 0 ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
+    }
+
+    function formatDateIndo(dateStr) {
+      if (!dateStr) return '-';
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      return `${d} ${bulan[m - 1]} ${y}`;
+    }
+
+    function escapeHTML(str) {
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    // =========================================================================
+    // 3. TOAST & CONFIRMATION
+    // =========================================================================
+    function showToast(msg, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      const colors = {
+        success: 'bg-slate-900 text-white border-emerald-500/40',
+        warning: 'bg-slate-900 text-white border-amber-500/40',
+        error: 'bg-slate-900 text-white border-rose-500/40'
+      };
+      const iconName = type === 'error' ? 'x-circle' : type === 'warning' ? 'alert-triangle' : 'check-circle-2';
+      const iconColor = type === 'error' ? 'text-rose-400' : type === 'warning' ? 'text-amber-400' : 'text-emerald-400';
+
+      el.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl border shadow-xl text-xs sm:text-sm font-medium animate-fade-up ${colors[type]}`;
+      el.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 ${iconColor} shrink-0"></i><span>${msg}</span>`;
+      container.appendChild(el);
+      lucide.createIcons({ nodes: [el] });
+
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.2s ease';
+        setTimeout(() => el.remove(), 200);
+      }, 3200);
+    }
+
+    let pendingConfirmAction = null;
+    function openConfirmModal(title, message, okLabel, onConfirm) {
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-message').textContent = message;
+      document.getElementById('confirm-ok-btn').textContent = okLabel;
+      pendingConfirmAction = onConfirm;
+
+      const modal = document.getElementById('confirm-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeConfirmModal() {
+      const modal = document.getElementById('confirm-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      pendingConfirmAction = null;
+    }
+
+    document.getElementById('confirm-cancel-btn').addEventListener('click', closeConfirmModal);
+    document.getElementById('confirm-ok-btn').addEventListener('click', () => {
+      if (pendingConfirmAction) pendingConfirmAction();
+      closeConfirmModal();
+    });
+
+    // =========================================================================
+    // 4. AUTENTIKASI LOGIN (ANNA & FACHRY) & ONBOARDING ZERO-STATE
+    // =========================================================================
+    function quickFillUser(uname) {
+      document.getElementById('login-username').value = uname;
+      document.getElementById('login-password').focus();
+    }
+
+    function togglePasswordVisibility(inputId) {
+      const el = document.getElementById(inputId);
+      el.type = el.type === 'password' ? 'text' : 'password';
+    }
+
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const uname = document.getElementById('login-username').value.trim().toLowerCase();
+      const pass = document.getElementById('login-password').value.trim();
+      const urlInput = document.getElementById('login-gas-url').value.trim();
+
+      if (uname !== 'anna' && uname !== 'fachry') {
+        showToast('Username tidak terdaftar. Gunakan "anna" atau "fachry".', 'error');
+        return;
+      }
+
+      state.gasUrl = urlInput;
+      saveState();
+
+      // Jika terhubung ke Google Sheets URL, verifikasi password langsung ke Sheet USERS!
+      if (state.gasUrl) {
+        try {
+          const res = await callGasApi({ action: 'login', username: uname, password: pass }, 'Memverifikasi akun ke Google Sheets...');
+          if (!res || res.status !== 'ok') {
+            showToast(res?.message || 'Login gagal! Periksa password di Sheet USERS.', 'error');
+            return;
+          }
+          if (res.users) {
+            Object.keys(res.users).forEach(k => {
+              if (state.users[k]) state.users[k] = { ...state.users[k], ...res.users[k] };
+            });
+          }
+          if (Array.isArray(res.transactions)) {
+            state.transactions = res.transactions;
+          }
+          state.currentUser = uname;
+          saveState();
+          checkAppEntry();
+          showToast(`Selamat datang, ${state.users[uname].name}! (Terhubung Google Sheets)`, 'success');
+          return;
+        } catch (err) {
+          showToast('Gagal menghubungi URL Google Sheets. Pastikan URL benar & akses Web App "Anyone".', 'error');
+          return;
+        }
+      }
+
+      // Mode Lokal (Offline / Demo)
+      const localUser = state.users[uname];
+      if (!localUser || localUser.password !== pass) {
+        showToast('Password salah! Default password adalah 251026.', 'error');
+        return;
+      }
+
+      state.currentUser = uname;
+      saveState();
+      checkAppEntry();
+      showToast(`Selamat datang, ${localUser.name}! (Mode Lokal)`, 'success');
+    }
+
+    function handleLogout() {
+      state.currentUser = null;
+      saveState();
+      checkAppEntry();
+      showToast('Berhasil keluar dari akun.', 'success');
+    }
+
+    function getActiveUserObj() {
+      if (!state.currentUser || !state.users[state.currentUser]) return state.users.anna;
+      return state.users[state.currentUser];
+    }
+
+    function checkAppEntry() {
+      const loginEl = document.getElementById('login-screen');
+      const onboardEl = document.getElementById('onboarding-screen');
+      const mainAppEl = document.getElementById('main-app');
+
+      // 1. Belum Login -> Tampilkan Layar Login
+      if (!state.currentUser) {
+        loginEl.classList.remove('hidden');
+        onboardEl.classList.add('hidden');
+        mainAppEl.classList.add('hidden');
+        document.getElementById('login-gas-url').value = state.gasUrl || '';
+        lucide.createIcons();
+        return;
+      }
+
+      const user = getActiveUserObj();
+
+      // 2. Sudah Login tapi Gaji masih 0 -> Tampilkan Layar Onboarding Setup Gaji & Tanggal
+      if (!user.initialSalary || user.initialSalary <= 0) {
+        loginEl.classList.add('hidden');
+        onboardEl.classList.remove('hidden');
+        mainAppEl.classList.add('hidden');
+        document.getElementById('onboard-user-name').textContent = user.name;
+        document.getElementById('onboard-salary').value = '';
+        document.getElementById('onboard-payday').value = user.paydayDate || getDefaultNextPayday();
+        lucide.createIcons();
+        return;
+      }
+
+      // 3. Masuk ke Dashboard Utama
+      loginEl.classList.add('hidden');
+      onboardEl.classList.add('hidden');
+      mainAppEl.classList.remove('hidden');
+      switchTab(activeTab);
+      refreshAllViews();
+      lucide.createIcons();
+    }
+
+    async function completeOnboarding(e) {
+      e.preventDefault();
+      const salary = parseRupiah(document.getElementById('onboard-salary').value);
+      const payday = document.getElementById('onboard-payday').value;
+
+      if (salary <= 0) {
+        showToast('Masukkan nominal gaji lebih dari Rp 0.', 'warning');
+        return;
+      }
+      if (!payday) {
+        showToast('Pilih tanggal gajian berikutnya.', 'warning');
+        return;
+      }
+
+      const user = getActiveUserObj();
+      user.initialSalary = salary;
+      user.paydayDate = payday;
+      user.lockedSavings = 0;
+      saveState();
+
+      if (state.gasUrl) {
+        try {
+          await callGasApi({
+            action: 'saveUserConfig',
+            username: user.username,
+            initialSalary: salary,
+            paydayDate: payday,
+            lockedSavings: 0
+          }, 'Menyimpan gaji ke Sheet USERS...');
+        } catch (err) {
+          showToast('Tersimpan lokal, namun gagal sinkron ke Google Sheets.', 'warning');
+        }
+      }
+
+      checkAppEntry();
+      showToast(`Setup ${user.name} selesai! Batas aman harian sudah aktif.`, 'success');
+    }
+
+    // =========================================================================
+    // 5. NAVIGASI TAB TERPISAH
+    // =========================================================================
+    function switchTab(tabName) {
+      activeTab = tabName;
+
+      document.querySelectorAll('.tab-view').forEach(sec => sec.classList.add('hidden'));
+      const targetSec = document.getElementById(`tab-${tabName}`);
+      if (targetSec) targetSec.classList.remove('hidden');
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        const isCurrent = btn.getAttribute('data-nav') === tabName;
+        btn.className = isCurrent
+          ? 'nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 transition'
+          : 'nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition';
+      });
+
+      document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        const isCurrent = btn.getAttribute('data-nav') === tabName;
+        btn.className = isCurrent
+          ? 'mobile-nav-btn flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 transition'
+          : 'mobile-nav-btn flex flex-col items-center justify-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 transition';
+      });
+
+      if (tabName === 'analytics') {
+        const metrics = computeMetrics();
+        renderAnalyticsCharts(metrics);
+      }
+      if (tabName === 'simulator') {
+        updateWhatIfSimulator();
+      }
+    }
+
+    // =========================================================================
+    // 6. KALKULASI INTI PER USER & REKAP GABUNGAN
+    // =========================================================================
+    function computeMetrics() {
+      const user = getActiveUserObj();
+      const uname = user.username;
+      const todayStr = getLocalDateString(0);
+      const currentMonthKey = todayStr.substring(0, 7);
+
+      let totalExpense = 0;
+      let totalExtraIncome = 0;
+      let todayExpense = 0;
+      const categoryTotals = {};
+      const dailyExpenseMap = {};
+
+      // Rekap bulanan gabungan Anna & Fachry
+      let annaMonthExpense = 0;
+      let fachryMonthExpense = 0;
+
+      state.transactions.forEach(tx => {
+        const txUser = (tx.username || 'anna').toLowerCase();
+        const txMonth = String(tx.date || '').substring(0, 7);
+
+        if (tx.type === 'expense' && txMonth === currentMonthKey) {
+          if (txUser === 'anna') annaMonthExpense += tx.amount;
+          if (txUser === 'fachry') fachryMonthExpense += tx.amount;
         }
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-    </script>
+        // Hitung metrik personal untuk user yang sedang login
+        if (txUser === uname) {
+          if (tx.type === 'expense') {
+            totalExpense += tx.amount;
+            if (tx.date === todayStr) todayExpense += tx.amount;
+            categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + tx.amount;
+            dailyExpenseMap[tx.date] = (dailyExpenseMap[tx.date] || 0) + tx.amount;
+          } else if (tx.type === 'income') {
+            totalExtraIncome += tx.amount;
+          }
+        }
+      });
+
+      const totalFunds = user.initialSalary + totalExtraIncome;
+      const rawBalance = totalFunds - totalExpense;
+      const activeBalance = Math.max(0, rawBalance - (user.lockedSavings || 0));
+
+      const todayObj = new Date(todayStr + 'T00:00:00');
+      const paydayObj = new Date((user.paydayDate || todayStr) + 'T00:00:00');
+      const diffDays = Math.ceil((paydayObj - todayObj) / (1000 * 60 * 60 * 24));
+      const daysLeft = Math.max(1, diffDays + 1);
+
+      const startOfDayActive = activeBalance + todayExpense;
+      const dailySafeLimit = startOfDayActive / daysLeft;
+      const todayRemaining = dailySafeLimit - todayExpense;
+
+      let spanDays = 1;
+      const userExpensesOnly = state.transactions.filter(t => t.type === 'expense' && (t.username || 'anna').toLowerCase() === uname);
+      if (userExpensesOnly.length > 0) {
+        const sortedDates = userExpensesOnly.map(t => t.date).sort();
+        const firstDateObj = new Date(sortedDates[0] + 'T00:00:00');
+        const elapsed = Math.ceil((todayObj - firstDateObj) / (1000 * 60 * 60 * 24)) + 1;
+        spanDays = Math.max(1, elapsed);
+      }
+      const avgDailyExpense = totalExpense / spanDays;
+
+      let topCategory = null;
+      let topCategoryAmount = 0;
+      Object.entries(categoryTotals).forEach(([cat, amt]) => {
+        if (amt > topCategoryAmount) {
+          topCategory = cat;
+          topCategoryAmount = amt;
+        }
+      });
+      const topCategoryPct = totalExpense > 0 ? Math.round((topCategoryAmount / totalExpense) * 100) : 0;
+
+      let estimatedZeroText = 'Aman s/d Gajian';
+      let estimatedZeroSub = 'Pola pengeluaranmu terkendali';
+      let isDangerRunOut = false;
+
+      if (activeBalance <= 0) {
+        estimatedZeroText = 'Saldo Aktif Habis';
+        estimatedZeroSub = 'Sisa saldo aktif sudah Rp 0';
+        isDangerRunOut = true;
+      } else if (avgDailyExpense > 0) {
+        const daysCanSurvive = Math.floor(activeBalance / avgDailyExpense);
+        if (daysCanSurvive < daysLeft) {
+          isDangerRunOut = true;
+          estimatedZeroText = formatDateIndo(getLocalDateString(daysCanSurvive));
+          estimatedZeroSub = `Bertahan ±${daysCanSurvive} hari (kurang ${daysLeft - daysCanSurvive} hari)`;
+        }
+      }
+
+      let healthScore = 100;
+      if (dailySafeLimit > 0 && todayExpense > dailySafeLimit) {
+        const overRatio = (todayExpense - dailySafeLimit) / dailySafeLimit;
+        healthScore -= Math.min(35, Math.round(overRatio * 30));
+      }
+      if (dailySafeLimit > 0 && avgDailyExpense > dailySafeLimit) {
+        const burnRatio = (avgDailyExpense - dailySafeLimit) / dailySafeLimit;
+        healthScore -= Math.min(30, Math.round(burnRatio * 25));
+      }
+      if (totalFunds > 0 && activeBalance / totalFunds < 0.2) {
+        healthScore -= 20;
+      }
+      if ((user.lockedSavings || 0) > 0) {
+        healthScore = Math.min(100, healthScore + 5);
+      }
+      healthScore = Math.max(0, Math.min(100, healthScore));
+
+      return {
+        user,
+        todayStr,
+        currentMonthKey,
+        totalFunds,
+        totalExpense,
+        totalExtraIncome,
+        todayExpense,
+        rawBalance,
+        activeBalance,
+        daysLeft,
+        dailySafeLimit,
+        todayRemaining,
+        avgDailyExpense,
+        categoryTotals,
+        dailyExpenseMap,
+        topCategory,
+        topCategoryAmount,
+        topCategoryPct,
+        estimatedZeroText,
+        estimatedZeroSub,
+        isDangerRunOut,
+        healthScore,
+        annaMonthExpense,
+        fachryMonthExpense
+      };
+    }
+
+    // =========================================================================
+    // 7. RENDER SEMUA HALAMAN
+    // =========================================================================
+    function refreshAllViews() {
+      const m = computeMetrics();
+      const user = m.user;
+      const initials = user.name.substring(0, 2).toUpperCase();
+      const connLabel = state.gasUrl ? 'Live Google Sheets' : 'Mode Lokal';
+
+      // Update Identitas User di Sidebar & Mobile Header
+      document.getElementById('sidebar-user-avatar').textContent = initials;
+      document.getElementById('sidebar-user-avatar').className = user.username === 'anna'
+        ? 'w-9 h-9 rounded-xl bg-pink-500/15 text-pink-500 font-display font-extrabold text-xs flex items-center justify-center shrink-0'
+        : 'w-9 h-9 rounded-xl bg-blue-500/15 text-blue-500 font-display font-extrabold text-xs flex items-center justify-center shrink-0';
+      document.getElementById('sidebar-user-name').textContent = user.name;
+      document.getElementById('sidebar-conn-badge').textContent = connLabel;
+
+      document.getElementById('mobile-user-pill').textContent = user.name;
+      document.getElementById('mobile-conn-status').textContent = connLabel;
+
+      // --- TAB 1: PENGELUARAN ---
+      document.getElementById('exp-active-user-label').textContent = user.name;
+      document.getElementById('exp-sheet-month-badge').textContent = `${user.username.toUpperCase()}_${m.currentMonthKey}`;
+      document.getElementById('form-recording-as').textContent = `Oleh: ${user.name}`;
+      document.getElementById('header-today-date').textContent = formatDateIndo(m.todayStr);
+      document.getElementById('card-daily-limit').textContent = formatRupiah(m.dailySafeLimit);
+
+      const remEl = document.getElementById('card-today-remaining');
+      remEl.textContent = m.todayRemaining >= 0
+        ? formatRupiah(m.todayRemaining)
+        : `Over ${formatRupiah(Math.abs(m.todayRemaining))}`;
+      remEl.className = m.todayRemaining >= 0 ? 'font-bold text-emerald-400 tabular-nums' : 'font-bold text-rose-400 tabular-nums';
+
+      document.getElementById('card-active-balance').textContent = formatRupiah(m.activeBalance);
+      document.getElementById('card-today-spent').textContent = formatRupiah(m.todayExpense);
+      document.getElementById('card-days-left').textContent = m.daysLeft;
+      document.getElementById('card-payday-date').textContent = formatDateIndo(user.paydayDate);
+
+      // Banner Peringatan Batas Aman
+      const banner = document.getElementById('safe-status-banner');
+      const bannerIcon = document.getElementById('safe-banner-icon');
+      const bannerTitle = document.getElementById('safe-banner-title');
+      const bannerDesc = document.getElementById('safe-banner-desc');
+
+      if (m.todayExpense > m.dailySafeLimit || m.activeBalance <= 0) {
+        banner.className = 'rounded-2xl p-3.5 sm:p-4 border flex items-center gap-3 sm:gap-3.5 bg-rose-500/10 border-rose-500/30 text-rose-900 dark:text-rose-100';
+        bannerIcon.className = 'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-rose-500 text-white';
+        bannerIcon.innerHTML = '<i data-lucide="alert-octagon" class="w-5 h-5"></i>';
+        bannerTitle.textContent = `Melewati Batas Aman Harian (${user.name})!`;
+        bannerDesc.textContent = `Pengeluaran hari ini (${formatRupiah(m.todayExpense)}) melampaui jatah aman. Rem belanja agar cukup sampai gajian.`;
+      } else if (m.todayExpense >= m.dailySafeLimit * 0.8 && m.dailySafeLimit > 0) {
+        banner.className = 'rounded-2xl p-3.5 sm:p-4 border flex items-center gap-3 sm:gap-3.5 bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-100';
+        bannerIcon.className = 'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500 text-white';
+        bannerIcon.innerHTML = '<i data-lucide="alert-triangle" class="w-5 h-5"></i>';
+        bannerTitle.textContent = 'Mendekati Batas Aman Hari Ini';
+        bannerDesc.textContent = `Sisa jatah aman hari ini tinggal ${formatRupiah(m.todayRemaining)}. Gunakan dengan bijak!`;
+      } else {
+        banner.className = 'rounded-2xl p-3.5 sm:p-4 border flex items-center gap-3 sm:gap-3.5 bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-100';
+        bannerIcon.className = 'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500 text-white';
+        bannerIcon.innerHTML = '<i data-lucide="check-circle-2" class="w-5 h-5"></i>';
+        bannerTitle.textContent = 'Aman! Pengeluaran Terkendali';
+        bannerDesc.textContent = `Kamu masih punya sisa jatah aman ${formatRupiah(m.todayRemaining)} untuk hari ini.`;
+      }
+      lucide.createIcons({ nodes: [bannerIcon] });
+
+      renderCategoryPills();
+      renderExpenseList();
+
+      // --- TAB 2: GRAFIK & ANALISA ---
+      document.getElementById('master-anna-expense').textContent = formatRupiah(m.annaMonthExpense);
+      document.getElementById('master-fachry-expense').textContent = formatRupiah(m.fachryMonthExpense);
+      document.getElementById('master-combined-expense').textContent = formatRupiah(m.annaMonthExpense + m.fachryMonthExpense);
+
+      document.getElementById('ana-score-username').textContent = user.name;
+      document.getElementById('ana-health-score').textContent = m.healthScore;
+      const scoreEl = document.getElementById('ana-health-score');
+      const badgeEl = document.getElementById('ana-health-badge');
+      const descEl = document.getElementById('ana-health-desc');
+
+      if (m.healthScore >= 75) {
+        scoreEl.className = 'font-display font-extrabold text-4xl sm:text-5xl text-emerald-500 tabular-nums';
+        badgeEl.className = 'inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500';
+        badgeEl.textContent = 'Sangat Sehat';
+        descEl.textContent = `Ritme pengeluaran ${user.name} sangat terjaga. Pertahankan sampai tanggal gajian tiba!`;
+      } else if (m.healthScore >= 45) {
+        scoreEl.className = 'font-display font-extrabold text-4xl sm:text-5xl text-amber-500 tabular-nums';
+        badgeEl.className = 'inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-500';
+        badgeEl.textContent = 'Waspada Boros';
+        descEl.textContent = 'Beberapa transaksi mulai menekan batas harianmu. Kurangi jajan non-esensial.';
+      } else {
+        scoreEl.className = 'font-display font-extrabold text-4xl sm:text-5xl text-rose-500 tabular-nums';
+        badgeEl.className = 'inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-500';
+        badgeEl.textContent = 'Zona Kritis';
+        descEl.textContent = 'Pengeluaran jauh melampaui batas aman. Segera lakukan penghematan ketat!';
+      }
+
+      document.getElementById('ana-top-cat').textContent = m.topCategory || 'Belum ada data';
+      document.getElementById('ana-top-cat-detail').textContent = m.topCategory
+        ? `${formatRupiah(m.topCategoryAmount)} (${m.topCategoryPct}% dari total)`
+        : 'Rp 0 (0%)';
+
+      const zeroDateEl = document.getElementById('ana-zero-date');
+      zeroDateEl.textContent = m.estimatedZeroText;
+      zeroDateEl.className = m.isDangerRunOut
+        ? 'font-display font-bold text-sm sm:text-base mt-0.5 text-rose-500'
+        : 'font-display font-bold text-sm sm:text-base mt-0.5 text-emerald-500';
+      document.getElementById('ana-zero-detail').textContent = m.estimatedZeroSub;
+
+      document.getElementById('ana-avg-vs-limit').textContent =
+        `${formatRupiah(m.avgDailyExpense)}/hari vs ${formatRupiah(m.dailySafeLimit)}/hari`;
+
+      const burnBadge = document.getElementById('ana-burn-badge');
+      if (m.avgDailyExpense > m.dailySafeLimit && m.totalExpense > 0) {
+        burnBadge.className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-500/10 text-rose-500 self-start sm:self-auto shrink-0';
+        burnBadge.textContent = 'Over-Burn';
+      } else {
+        burnBadge.className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-500 self-start sm:self-auto shrink-0';
+        burnBadge.textContent = 'Terkendali';
+      }
+
+      if (activeTab === 'analytics') {
+        renderAnalyticsCharts(m);
+      }
+
+      // --- TAB 3: SIMULATOR & DANA KUNCI ---
+      document.getElementById('lock-current-display').textContent = formatRupiah(user.lockedSavings || 0);
+      document.getElementById('lock-amount-input').value = (user.lockedSavings || 0) > 0
+        ? user.lockedSavings.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+        : '';
+      const unlockBtn = document.getElementById('btn-unlock-savings');
+      if ((user.lockedSavings || 0) > 0) {
+        unlockBtn.classList.remove('hidden');
+      } else {
+        unlockBtn.classList.add('hidden');
+      }
+      updateWhatIfSimulator();
+
+      // --- TAB 4: PEMASUKAN & PENGATURAN ---
+      document.getElementById('set-initial-salary').value = user.initialSalary > 0
+        ? user.initialSalary.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+        : '';
+      document.getElementById('set-payday-date').value = user.paydayDate;
+      document.getElementById('set-gas-url').value = state.gasUrl || '';
+      renderExtraIncomeList();
+    }
+
+    function renderCategoryPills() {
+      const container = document.getElementById('category-pills');
+      container.innerHTML = EXPENSE_CATEGORIES.map(cat => {
+        const isSelected = selectedCategory === cat.id;
+        return `
+          <button
+            type="button"
+            onclick="selectExpenseCategory('${cat.id}')"
+            class="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold transition text-left min-h-[42px] ${
+              isSelected
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }"
+          >
+            <i data-lucide="${cat.icon}" class="w-3.5 h-3.5 shrink-0"></i>
+            <span class="truncate">${cat.label}</span>
+          </button>
+        `;
+      }).join('');
+      lucide.createIcons({ nodes: [container] });
+    }
+
+    function selectExpenseCategory(catId) {
+      selectedCategory = catId;
+      document.getElementById('exp-category').value = catId;
+      renderCategoryPills();
+    }
+
+    function renderExpenseList() {
+      const container = document.getElementById('expense-list-container');
+      const subtitle = document.getElementById('expense-list-subtitle');
+      const filterCat = document.getElementById('expense-filter-cat').value;
+      const filterUser = document.getElementById('expense-filter-user').value;
+      const currentUname = getActiveUserObj().username;
+
+      const expenses = state.transactions
+        .filter(t => t.type === 'expense')
+        .filter(t => {
+          const txUser = (t.username || 'anna').toLowerCase();
+          if (filterUser === 'CURRENT') return txUser === currentUname;
+          if (filterUser === 'ALL') return true;
+          return txUser === filterUser;
+        })
+        .filter(t => filterCat === 'ALL' || t.category === filterCat)
+        .sort((a, b) => (b.date !== a.date ? b.date.localeCompare(a.date) : b.createdAt - a.createdAt));
+
+      subtitle.textContent = expenses.length > 0
+        ? `Menampilkan ${expenses.length} catatan pengeluaran`
+        : 'Belum ada pengeluaran tercatat';
+
+      if (expenses.length === 0) {
+        container.innerHTML = `
+          <div class="py-10 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-3">
+              <i data-lucide="receipt" class="w-6 h-6"></i>
+            </div>
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Belum ada pengeluaran</p>
+            <p class="text-xs text-slate-400 mt-1">Gunakan form di atas untuk mencatat pengeluaran pertamamu.</p>
+          </div>
+        `;
+        lucide.createIcons({ nodes: [container] });
+        return;
+      }
+
+      container.innerHTML = expenses.map(item => {
+        const meta = EXPENSE_CATEGORIES.find(c => c.id === item.category) || EXPENSE_CATEGORIES[5];
+        const txUser = (item.username || 'anna').toLowerCase();
+        const ownerBadge = txUser === 'anna'
+          ? '<span class="px-1.5 py-0.5 rounded bg-pink-500/10 text-pink-600 dark:text-pink-400 font-bold text-[10px]">Anna</span>'
+          : '<span class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-[10px]">Fachry</span>';
+
+        return `
+          <div class="py-3.5 flex items-center justify-between gap-2.5">
+            <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${meta.pillBg} flex items-center justify-center shrink-0">
+                <i data-lucide="${meta.icon}" class="w-4 h-4"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <p class="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">${escapeHTML(item.note)}</p>
+                  ${ownerBadge}
+                </div>
+                <div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                  <span>${item.category}</span>
+                  <span>•</span>
+                  <span>${formatDateIndo(item.date)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+              <span class="font-display font-bold text-xs sm:text-base text-rose-500 tabular-nums">-${formatRupiah(item.amount)}</span>
+              <button onclick="deleteTransaction('${item.id}')" title="Hapus" class="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons({ nodes: [container] });
+    }
+
+    // =========================================================================
+    // 8. GRAFIK CHART.JS (TAB 2)
+    // =========================================================================
+    function renderAnalyticsCharts(m) {
+      const isDark = document.documentElement.classList.contains('dark');
+      const textColor = isDark ? '#94a3b8' : '#475569';
+      const gridColor = isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(15, 23, 42, 0.06)';
+
+      const labels = [];
+      const barValues = [];
+      const limitValues = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const dStr = getLocalDateString(-i);
+        const [_, mm, dd] = dStr.split('-');
+        labels.push(`${dd}/${mm}`);
+        barValues.push(m.dailyExpenseMap[dStr] || 0);
+        limitValues.push(Math.round(m.dailySafeLimit));
+      }
+
+      const barCtx = document.getElementById('barTrendChart').getContext('2d');
+      if (barChartInstance) barChartInstance.destroy();
+
+      barChartInstance = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              type: 'line',
+              label: 'Batas Aman Harian',
+              data: limitValues,
+              borderColor: '#f59e0b',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              pointRadius: 0,
+              fill: false,
+              order: 1
+            },
+            {
+              type: 'bar',
+              label: `Pengeluaran (${m.user.name})`,
+              data: barValues,
+              backgroundColor: barValues.map(v => v > m.dailySafeLimit ? 'rgba(244, 63, 94, 0.85)' : 'rgba(16, 185, 129, 0.85)'),
+              borderRadius: 6,
+              maxBarThickness: 28,
+              order: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: textColor, boxWidth: 12, font: { size: 11 } } },
+            tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatRupiah(ctx.parsed.y)}` } }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: textColor, font: { size: 11 } } },
+            y: {
+              beginAtZero: true,
+              grid: { color: gridColor },
+              ticks: { color: textColor, font: { size: 10 }, callback: v => v >= 1000 ? `${v / 1000}rb` : v }
+            }
+          }
+        }
+      });
+
+      const catEntries = Object.entries(m.categoryTotals).sort((a, b) => b[1] - a[1]);
+      const emptyState = document.getElementById('doughnut-empty-state');
+      const canvasEl = document.getElementById('doughnutCategoryChart');
+
+      if (doughnutChartInstance) doughnutChartInstance.destroy();
+
+      if (catEntries.length === 0) {
+        emptyState.classList.remove('hidden');
+        canvasEl.classList.add('opacity-0');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      canvasEl.classList.remove('opacity-0');
+
+      const dLabels = catEntries.map(([k]) => k);
+      const dValues = catEntries.map(([_, v]) => v);
+      const dColors = dLabels.map(k => {
+        const found = EXPENSE_CATEGORIES.find(c => c.id === k);
+        return found ? found.color : '#64748b';
+      });
+
+      doughnutChartInstance = new Chart(canvasEl.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: dLabels,
+          datasets: [{
+            data: dValues,
+            backgroundColor: dColors,
+            borderColor: isDark ? '#0f172a' : '#ffffff',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: { position: 'bottom', labels: { color: textColor, boxWidth: 10, font: { size: 11 } } },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const pct = m.totalExpense > 0 ? Math.round((ctx.parsed / m.totalExpense) * 100) : 0;
+                  return ` ${ctx.label}: ${formatRupiah(ctx.parsed)} (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // =========================================================================
+    // 9. AKSI USER + SINKRONISASI GOOGLE SHEETS
+    // =========================================================================
+    async function handleAddExpense(e) {
+      e.preventDefault();
+      const amount = parseRupiah(document.getElementById('exp-amount').value);
+      const note = document.getElementById('exp-note').value.trim();
+      const category = document.getElementById('exp-category').value;
+      const date = document.getElementById('exp-date').value || getLocalDateString(0);
+      const user = getActiveUserObj();
+
+      if (amount <= 0) {
+        showToast('Nominal pengeluaran harus lebih dari Rp 0.', 'warning');
+        return;
+      }
+
+      const newTx = {
+        id: 'tx_' + Date.now(),
+        type: 'expense',
+        amount,
+        note,
+        category,
+        date,
+        username: user.username,
+        userNameDisplay: user.name,
+        createdAt: Date.now()
+      };
+
+      state.transactions.unshift(newTx);
+      saveState();
+      document.getElementById('exp-amount').value = '';
+      document.getElementById('exp-note').value = '';
+      refreshAllViews();
+
+      if (state.gasUrl) {
+        try {
+          await callGasApi({ action: 'addTransaction', transaction: newTx }, `Mencatat ke Sheet ${user.username.toUpperCase()}_${date.substring(0, 7)}...`);
+        } catch (err) {
+          showToast('Tersimpan lokal, gagal kirim ke Google Sheets.', 'warning');
+        }
+      }
+
+      const m = computeMetrics();
+      if (date === m.todayStr && m.todayExpense > m.dailySafeLimit) {
+        showToast('Perhatian! Pengeluaran hari ini melewati batas aman.', 'warning');
+      } else {
+        showToast(`Pengeluaran ${user.name} berhasil dicatat!`, 'success');
+      }
+    }
+
+    async function deleteTransaction(id) {
+      state.transactions = state.transactions.filter(t => t.id !== id);
+      saveState();
+      refreshAllViews();
+
+      if (state.gasUrl) {
+        try {
+          await callGasApi({ action: 'deleteTransaction', id }, 'Menghapus baris dari Google Sheets...');
+        } catch (err) {
+          showToast('Terhapus lokal, gagal sinkron hapus ke Sheet.', 'warning');
+        }
+      }
+      showToast('Catatan dihapus.', 'success');
+    }
+
+    function updateWhatIfSimulator() {
+      const m = computeMetrics();
+      const itemPrice = parseRupiah(document.getElementById('sim-item-price').value);
+
+      document.getElementById('sim-before-limit').textContent = `${formatRupiah(m.dailySafeLimit)} / hari`;
+
+      if (itemPrice <= 0) {
+        document.getElementById('sim-after-limit').textContent = `${formatRupiah(m.dailySafeLimit)} / hari`;
+        document.getElementById('sim-after-limit').className = 'font-display font-bold text-sm text-emerald-500 tabular-nums';
+        document.getElementById('sim-verdict-text').textContent = 'Masukkan harga barang di atas untuk melihat apakah pembelian tersebut masih aman untuk sisa harimu.';
+        return;
+      }
+
+      const afterActiveBalance = m.activeBalance - itemPrice;
+      const afterDailyLimit = Math.max(0, afterActiveBalance) / m.daysLeft;
+      const diff = m.dailySafeLimit - afterDailyLimit;
+
+      const afterEl = document.getElementById('sim-after-limit');
+      const verdictEl = document.getElementById('sim-verdict-text');
+
+      if (afterActiveBalance < 0) {
+        afterEl.textContent = 'Saldo Kurang!';
+        afterEl.className = 'font-display font-bold text-sm text-rose-500';
+        verdictEl.innerHTML = `<span class="text-rose-500 font-semibold">Tidak Aman!</span> Saldo aktifmu kurang <strong>${formatRupiah(Math.abs(afterActiveBalance))}</strong> untuk membeli barang ini.`;
+      } else {
+        const isRisky = afterDailyLimit < m.dailySafeLimit * 0.65;
+        afterEl.textContent = `${formatRupiah(afterDailyLimit)} / hari`;
+        afterEl.className = isRisky ? 'font-display font-bold text-sm text-rose-500 tabular-nums' : 'font-display font-bold text-sm text-amber-500 tabular-nums';
+        verdictEl.innerHTML = isRisky
+          ? `<span class="text-rose-500 font-semibold">Berisiko!</span> Jatah harianmu turun drastis sebesar <strong>${formatRupiah(diff)}/hari</strong>. Sebaiknya tunda sampai gajian.`
+          : `<span class="text-emerald-500 font-semibold">Masih Aman!</span> Jatah harianmu berkurang <strong>${formatRupiah(diff)}/hari</strong> selama ${m.daysLeft} hari ke depan.`;
+      }
+    }
+
+    async function handleUpdateLockedSavings(e) {
+      e.preventDefault();
+      const lockVal = parseRupiah(document.getElementById('lock-amount-input').value);
+      const m = computeMetrics();
+      const user = getActiveUserObj();
+
+      if (lockVal > m.rawBalance) {
+        showToast('Dana kunci tidak boleh melebihi total sisa saldomu.', 'warning');
+        return;
+      }
+
+      user.lockedSavings = lockVal;
+      saveState();
+      refreshAllViews();
+
+      if (state.gasUrl) {
+        try {
+          await callGasApi({ action: 'saveUserConfig', username: user.username, lockedSavings: lockVal }, 'Menyimpan dana kunci ke Sheet USERS...');
+        } catch (err) {}
+      }
+      showToast(lockVal > 0 ? `Dana ${formatRupiah(lockVal)} berhasil dikunci!` : 'Dana kunci diatur ke Rp 0.', 'success');
+    }
+
+    async function unlockAllSavings() {
+      const user = getActiveUserObj();
+      user.lockedSavings = 0;
+      saveState();
+      refreshAllViews();
+
+      if (state.gasUrl) {
+        try {
+          await callGasApi({ action: 'saveUserConfig', username: user.username, lockedSavings: 0 }, 'Mencairkan dana kunci di Sheet...');
+        } catch (err) {}
+      }
+      showToast('Seluruh dana kunci dicairkan kembali ke saldo aktif.', 'success');
+    }
+
+    async function handleAddExtraIncome(e) {
+      e.preventDefault();
+      const amount = parseRupiah(document.getElementById('inc-amount').value);
+      const note = document.getElementById('inc-note').value.trim();
+      const user = getActiveUserObj();
+
+      if (amount <= 0) {
+        showToast('Nominal pemasukan harus lebih dari Rp 0.', 'warning');
+        return;
+      }
+
+      const newInc = {
+        id: 'inc_' + Date.now(),
+        type: 'income',
+        amount,
+        note,
+        category: 'Pemasukan',
+        date: getLocalDateString(0),
+        username: user.username,
+        userNameDisplay: user.name,
+        createdAt: Date.now()
+      };
+
+      state.transactions.unshift(newInc);
+      saveState();
+      document.getElementById('inc-amount').value = '';
+      document.getElementById('inc-note').value = '';
+      refreshAllViews();
+
+      if (state.gasUrl) {
+        try {
+          await callGasApi({ action: 'addTransaction', transaction: newInc }, 'Menyimpan pemasukan ke Google Sheets...');
+        } catch (err) {}
+      }
+      showToast('Pemasukan tambahan berhasil ditambahkan!', 'success');
+    }
+
+    function renderExtraIncomeList() {
+      const container = document.getElementById('extra-income-list');
+      const uname = getActiveUserObj().username;
+      const incomes = state.transactions.filter(t => t.type === 'income' && (t.username || 'anna').toLowerCase() === uname);
+      if (incomes.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400">Belum ada pemasukan tambahan tercatat.</p>`;
+        return;
+      }
+
+      container.innerHTML = `
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Riwayat Pemasukan Ekstra</p>
+        ${incomes.map(inc => `
+          <div class="flex items-center justify-between text-xs py-1.5">
+            <span class="font-medium truncate pr-2">${escapeHTML(inc.note)}</span>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="font-bold text-emerald-500 tabular-nums">+${formatRupiah(inc.amount)}</span>
+              <button onclick="deleteTransaction('${inc.id}')" class="text-slate-400 hover:text-rose-500">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      `;
+      lucide.createIcons({ nodes: [container] });
+    }
+
+    async function handleUpdateMainSettings(e) {
+      e.preventDefault();
+      const newSalary = parseRupiah(document.getElementById('set-initial-salary').value);
+      const newPayday = document.getElementById('set-payday-date').value;
+      const user = getActiveUserObj();
+
+      if (newSalary <= 0 || !newPayday) {
+        showToast('Pastikan nominal gaji dan tanggal gajian valid.', 'warning');
+        return;
+      }
+
+      user.initialSalary = newSalary;
+      user.paydayDate = newPayday;
+      saveState();
+      refreshAllViews();
+
+      if (state.gasUrl) {
+        try {
+          await callGasApi({
+            action: 'saveUserConfig',
+            username: user.username,
+            initialSalary: newSalary,
+            paydayDate: newPayday
+          }, 'Memperbarui gaji & tanggal di Sheet USERS...');
+        } catch (err) {}
+      }
+      showToast('Pengaturan gaji & tanggal gajian diperbarui!', 'success');
+    }
+
+    async function handleChangePassword(e) {
+      e.preventDefault();
+      const newPass = document.getElementById('set-new-password').value.trim();
+      if (newPass.length < 4) {
+        showToast('Password minimal 4 karakter.', 'warning');
+        return;
+      }
+
+      const user = getActiveUserObj();
+      user.password = newPass;
+      saveState();
+      document.getElementById('set-new-password').value = '';
+
+      if (state.gasUrl) {
+        try {
+          await callGasApi({
+            action: 'saveUserConfig',
+            username: user.username,
+            password: newPass
+          }, 'Memperbarui password di Sheet USERS...');
+        } catch (err) {
+          showToast('Password diperbarui lokal, gagal sinkron ke Sheet.', 'warning');
+          return;
+        }
+      }
+      showToast('Password berhasil diperbarui!', 'success');
+    }
+
+    async function handleSaveGasUrl(e) {
+      e.preventDefault();
+      const urlVal = document.getElementById('set-gas-url').value.trim();
+      state.gasUrl = urlVal;
+      saveState();
+      refreshAllViews();
+      if (urlVal) {
+        await syncFromGoogleSheets(true);
+      } else {
+        showToast('URL dikosongkan. Beralih ke Mode Lokal.', 'success');
+      }
+    }
+
+    function exportToCSV() {
+      if (state.transactions.length === 0) {
+        showToast('Belum ada data transaksi untuk diekspor.', 'warning');
+        return;
+      }
+      const headers = ['Tanggal', 'Bulan', 'Akun', 'Tipe', 'Kategori', 'Catatan', 'Nominal (Rp)'];
+      const rows = state.transactions.map(t => [
+        t.date,
+        String(t.date).substring(0, 7),
+        `"${t.userNameDisplay || t.username}"`,
+        t.type === 'income' ? 'Pemasukan' : 'Pengeluaran',
+        `"${t.category}"`,
+        `"${t.note.replace(/"/g, '""')}"`,
+        t.amount
+      ]);
+      const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `SakuAman_${getActiveUserObj().username}_${getLocalDateString(0)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('File CSV berhasil diunduh!', 'success');
+    }
+
+    function promptResetToZero() {
+      const user = getActiveUserObj();
+      openConfirmModal(
+        `Reset Akun ${user.name} ke Rp 0?`,
+        `Transaksi milik ${user.name} dan nominal gaji akan di-reset ke Rp 0 dan Anda akan diarahkan kembali ke layar pengaturan awal.`,
+        'Ya, Reset ke 0',
+        async () => {
+          const toDeleteIds = state.transactions
+            .filter(t => (t.username || 'anna').toLowerCase() === user.username)
+            .map(t => t.id);
+
+          state.transactions = state.transactions.filter(t => (t.username || 'anna').toLowerCase() !== user.username);
+          user.initialSalary = 0;
+          user.lockedSavings = 0;
+          activeTab = 'expenses';
+          saveState();
+
+          if (state.gasUrl) {
+            try {
+              await callGasApi({
+                action: 'saveUserConfig',
+                username: user.username,
+                initialSalary: 0,
+                lockedSavings: 0
+              }, 'Mereset akun di Google Sheets...');
+              for (const id of toDeleteIds) {
+                await callGasApi({ action: 'deleteTransaction', id }, 'Membersihkan riwayat di Sheet...');
+              }
+            } catch (err) {}
+          }
+
+          checkAppEntry();
+          showToast(`Akun ${user.name} berhasil di-reset ke Rp 0.`, 'success');
+        }
+      );
+    }
+
+    // =========================================================================
+    // 10. THEME TOGGLE & INISIALISASI AWAL
+    // =========================================================================
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.classList.toggle('dark');
+      if (isDark) {
+        html.classList.remove('light');
+        state.theme = 'dark';
+      } else {
+        html.classList.add('light');
+        state.theme = 'light';
+      }
+      saveState();
+      if (state.currentUser && getActiveUserObj().initialSalary > 0 && activeTab === 'analytics') {
+        renderAnalyticsCharts(computeMetrics());
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (state.theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+      } else {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+      }
+
+      document.getElementById('exp-date').value = getLocalDateString(0);
+      checkAppEntry();
+    });
+  </script>
 </body>
 </html>
