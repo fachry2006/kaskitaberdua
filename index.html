@@ -139,7 +139,7 @@
   </div>
 
   <!-- ======================================================================= -->
-  <!-- 1. LAYAR LOGIN KASKITA (BERSIH & MINIMALIS)                             -->
+  <!-- 1. LAYAR LOGIN KASKITA                                                  -->
   <!-- ======================================================================= -->
   <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-4 bg-white dark:bg-kk-darkbg">
     <button onclick="toggleTheme()" aria-label="Ubah Tema" class="fixed top-4 right-4 p-2.5 rounded-xl border border-neutral-200 dark:border-kk-darkborder bg-white dark:bg-kk-darkcard text-neutral-700 dark:text-neutral-300">
@@ -186,8 +186,10 @@
           </div>
         </div>
 
+        <p id="login-error-box" class="hidden text-xs font-semibold text-rose-600 bg-rose-50 dark:bg-rose-950/50 dark:text-rose-300 px-3 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900"></p>
+
         <button type="submit" id="btn-login-submit" class="w-full py-3 rounded-xl bg-neutral-900 text-white dark:bg-kk-mint dark:text-neutral-900 font-display font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.99] transition">
-          <span>Masuk</span>
+          <span id="btn-login-text">Masuk</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
       </form>
@@ -254,7 +256,7 @@
   </div>
 
   <!-- ======================================================================= -->
-  <!-- 3. APLIKASI UTAMA KASKITA (MOBILE-FIRST COMPACT UI)                     -->
+  <!-- 3. APLIKASI UTAMA KASKITA                                               -->
   <!-- ======================================================================= -->
   <div id="main-app" class="hidden min-h-screen flex flex-col lg:flex-row">
 
@@ -319,7 +321,7 @@
       </div>
     </aside>
 
-    <!-- MOBILE HEADER (COMPACT & ONE-HAND FRIENDLY) -->
+    <!-- MOBILE HEADER -->
     <header class="lg:hidden sticky top-0 z-30 h-13 px-3.5 py-2.5 bg-white/95 dark:bg-kk-darkbg/95 backdrop-blur-sm border-b border-neutral-200 dark:border-kk-darkborder flex items-center justify-between">
       <div class="flex items-center gap-2">
         <div class="w-7 h-7 rounded-lg bg-kk-mint text-neutral-900 flex items-center justify-center">
@@ -348,7 +350,7 @@
       <div class="max-w-3xl mx-auto px-3.5 sm:px-6 py-4 sm:py-6">
 
         <!-- =============================================================== -->
-        <!-- TAB 1: RINGKASAN & CATAT TRANSAKSI (COMPACT MOBILE DASHBOARD)   -->
+        <!-- TAB 1: RINGKASAN & CATAT TRANSAKSI                              -->
         <!-- =============================================================== -->
         <section id="tab-dashboard" class="tab-view space-y-4 animate-in">
 
@@ -394,7 +396,7 @@
             </span>
           </div>
 
-          <!-- Form Catat Cepat (Pengeluaran / Pemasukan dalam 1 Card Compact) -->
+          <!-- Form Catat Cepat -->
           <div class="rounded-2xl bg-white dark:bg-kk-darkcard border border-neutral-200 dark:border-kk-darkborder p-4">
             <div class="flex items-center justify-between gap-2 mb-3">
               <h2 class="font-display font-bold text-sm">Catat Transaksi</h2>
@@ -455,7 +457,7 @@
             </form>
           </div>
 
-          <!-- Ringkasan Keuangan Bulan Ini (4 Kotak Pastel Compact) -->
+          <!-- Ringkasan Keuangan Bulan Ini -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <div class="rounded-xl p-3 bg-kk-mint/60 dark:bg-kk-darkcard border border-neutral-200/80 dark:border-kk-darkborder">
               <span class="text-[10px] font-semibold text-neutral-600 dark:text-neutral-400 block">Total Pemasukan</span>
@@ -475,7 +477,7 @@
             </div>
           </div>
 
-          <!-- 5 Transaksi Terakhir (Preview Cepat di Dashboard) -->
+          <!-- 5 Transaksi Terakhir -->
           <div class="rounded-2xl bg-white dark:bg-kk-darkcard border border-neutral-200 dark:border-kk-darkborder p-4">
             <div class="flex items-center justify-between mb-2.5">
               <h3 class="font-display font-bold text-xs sm:text-sm">Transaksi Terbaru</h3>
@@ -691,7 +693,7 @@
       </div>
     </main>
 
-    <!-- MOBILE BOTTOM NAVIGATION (ONE-HAND COMFORT) -->
+    <!-- MOBILE BOTTOM NAVIGATION -->
     <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 dark:bg-kk-darkcard/95 backdrop-blur-sm border-t border-neutral-200 dark:border-kk-darkborder pb-safe">
       <div class="grid grid-cols-4 h-14">
         <button onclick="switchTab('dashboard')" data-nav="dashboard" class="mobile-nav-btn flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold">
@@ -735,6 +737,7 @@
     let activeTab = 'dashboard';
     let selectedCategory = 'Makan & Minum';
     let isSyncing = false;
+    let isLoggingIn = false;
     let barChartInstance = null;
     let doughnutChartInstance = null;
 
@@ -745,7 +748,7 @@
     let calSelectedDate = null;
 
     // =========================================================================
-    // UTILITAS TANGGAL & FORMAT (BEBAS BUG TIMEZONE & TAHUN KABISAT)
+    // UTILITAS TANGGAL & FORMAT
     // =========================================================================
     function getLocalDateString(offsetDays = 0) {
       const d = new Date();
@@ -777,13 +780,12 @@
       const todayDate = parseLocalDate(todayStr);
       let targetDate = parseLocalDate(paydayStr);
 
-      if (!todayDate) return { daysLeft: 1, effectivePaydayStr: todayStr };
+      if (!todayDate) return { daysLeft: 1, countdownLabel: 'Hari Ini', effectivePaydayStr: todayStr };
       if (!targetDate) {
         const defStr = getDefaultNextPayday();
         return calculateDaysUntilPayday(todayStr, defStr);
       }
 
-      // Jika tanggal gajian sudah terlewati, otomatis majukan ke tanggal yang sama di siklus bulan berikutnya
       if (targetDate < todayDate) {
         const payDayNum = targetDate.getDate();
         let nextYear = todayDate.getFullYear();
@@ -791,7 +793,6 @@
         if (todayDate.getDate() > payDayNum) {
           nextMonth += 1;
         }
-        // Tangani akhir bulan & tahun kabisat (misal tgl 31 di bulan Februari -> tgl 28/29)
         const maxDayInMonth = new Date(nextYear, nextMonth + 1, 0).getDate();
         targetDate = new Date(nextYear, nextMonth, Math.min(payDayNum, maxDayInMonth), 12, 0, 0, 0);
       }
@@ -800,7 +801,6 @@
       const diffDays = Math.round((targetDate - todayDate) / msPerDay);
       const effectiveStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
 
-      // Minimal 1 hari (hari ini sendiri dihitung 1 hari pembagi agar tidak division by zero)
       return {
         daysLeft: Math.max(1, diffDays + 1),
         countdownLabel: diffDays <= 0 ? 'Hari Ini' : `${diffDays} Hari`,
@@ -841,7 +841,7 @@
     }
 
     // =========================================================================
-    // STATE MANAGEMENT & INTEGRASI API BACKEND
+    // STATE MANAGEMENT & TEMA
     // =========================================================================
     function createInitialState() {
       return {
@@ -869,6 +869,29 @@
       } catch (e) {}
     }
 
+    function applyTheme() {
+      const root = document.documentElement;
+      if (state.theme === 'dark') {
+        root.classList.add('dark');
+        root.classList.remove('light');
+      } else {
+        root.classList.add('light');
+        root.classList.remove('dark');
+      }
+    }
+
+    function toggleTheme() {
+      state.theme = state.theme === 'dark' ? 'light' : 'dark';
+      saveState();
+      applyTheme();
+      if (activeTab === 'budget') {
+        renderAnalyticsCharts(computeFinancialMetrics());
+      }
+    }
+
+    // =========================================================================
+    // API REQUEST & INTEGRASI BACKEND AMAN
+    // =========================================================================
     function setSyncIndicator(active, text = 'Menyinkronkan...') {
       const el = document.getElementById('sync-indicator');
       document.getElementById('sync-text').textContent = text;
@@ -892,17 +915,37 @@
         const response = await fetch(API_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(bodyData)
+          body: JSON.stringify(bodyData),
+          redirect: 'follow'
         });
+
+        const rawText = await response.text();
         if (!response.ok) {
-          throw new Error('Koneksi ke server gagal.');
+          throw new Error(`HTTP ${response.status}: Koneksi ke server gagal.`);
         }
-        const json = await response.json();
+
+        let json;
+        try {
+          json = JSON.parse(rawText);
+        } catch (parseErr) {
+          const isHtmlResponse = /<!doctype html>|<html/i.test(rawText);
+          throw new Error(
+            isHtmlResponse
+              ? 'Server mengembalikan halaman HTML. Pastikan Web App Apps Script disetel "Who has access: Anyone" dan sudah di-deploy versi terbaru.'
+              : 'Respons server bukan format JSON yang valid.'
+          );
+        }
+
         if (json.status === 'unauthorized') {
           forceSessionExpired();
           throw new Error(json.message || 'Sesi berakhir.');
         }
         return json;
+      } catch (err) {
+        if (err && err.name === 'TypeError' && /fetch/i.test(err.message || '')) {
+          throw new Error('Gagal terhubung ke Apps Script. Periksa koneksi internet atau URL /exec.');
+        }
+        throw err;
       } finally {
         isSyncing = false;
         setSyncIndicator(false);
@@ -951,7 +994,7 @@
         el.style.opacity = '0';
         el.style.transition = 'opacity 0.2s';
         setTimeout(() => el.remove(), 200);
-      }, 2800);
+      }, 3200);
     }
 
     let pendingConfirm = null;
@@ -984,33 +1027,70 @@
       el.type = el.type === 'password' ? 'text' : 'password';
     }
 
+    function setLoginError(message) {
+      const box = document.getElementById('login-error-box');
+      if (!box) return;
+      if (!message) {
+        box.classList.add('hidden');
+        box.textContent = '';
+      } else {
+        box.textContent = message;
+        box.classList.remove('hidden');
+      }
+    }
+
     async function handleLoginSubmit(e) {
       e.preventDefault();
-      const username = document.getElementById('login-username').value.trim().toLowerCase();
-      const password = document.getElementById('login-password').value.trim();
-      const btn = document.getElementById('btn-login-submit');
+      if (isLoggingIn || isSyncing) return;
 
-      if (!username || !password) return;
+      const usernameEl = document.getElementById('login-username');
+      const passwordEl = document.getElementById('login-password');
+      const btn = document.getElementById('btn-login-submit');
+      const btnText = document.getElementById('btn-login-text');
+
+      const username = (usernameEl.value || '').trim().toLowerCase();
+      const password = (passwordEl.value || '').trim();
+
+      setLoginError('');
+
+      if (!username || !password) {
+        setLoginError('Username dan password wajib diisi.');
+        return;
+      }
+
+      isLoggingIn = true;
       btn.disabled = true;
+      btn.classList.add('opacity-60', 'cursor-not-allowed');
+      btnText.textContent = 'Memproses...';
 
       try {
         const res = await apiRequest({ action: 'login', username, password }, 'Memverifikasi akun...');
-        if (!res || res.status !== 'ok') {
-          showToast(res?.message || 'Username atau password salah.', 'error');
+        if (!res || res.status !== 'ok' || !res.token || !res.currentUser) {
+          const errMsg = res?.message || 'Username atau password tidak sesuai.';
+          setLoginError(errMsg);
+          showToast(errMsg, 'error');
           return;
         }
+
         state.token = res.token;
-        state.currentUser = res.currentUser;
-        state.users = res.users || {};
+        state.currentUser = String(res.currentUser).trim().toLowerCase();
+        state.users = res.users && typeof res.users === 'object' ? res.users : {};
         state.transactions = Array.isArray(res.transactions) ? res.transactions : [];
         saveState();
-        document.getElementById('login-password').value = '';
+
+        passwordEl.value = '';
+        setLoginError('');
         renderEntryScreen();
         showToast(`Selamat datang, ${getActiveUser().name}!`, 'success');
       } catch (err) {
-        showToast(err.message || 'Gagal terhubung. Periksa koneksi internet.', 'error');
+        const errMsg = err.message || 'Gagal terhubung. Periksa koneksi internet dan URL Apps Script.';
+        setLoginError(errMsg);
+        showToast(errMsg, 'error');
       } finally {
+        isLoggingIn = false;
         btn.disabled = false;
+        btn.classList.remove('opacity-60', 'cursor-not-allowed');
+        btnText.textContent = 'Masuk';
       }
     }
 
@@ -1056,7 +1136,7 @@
       }
 
       const user = getActiveUser();
-      if (!user.initialSalary || user.initialSalary <= 0) {
+      if (!user.initialSalary || Number(user.initialSalary) <= 0) {
         loginEl.classList.add('hidden');
         onboardEl.classList.remove('hidden');
         mainEl.classList.add('hidden');
@@ -1137,7 +1217,7 @@
     }
 
     // =========================================================================
-    // SATU SUMBER LOGIKA KEUANGAN (SINGLE SOURCE OF TRUTH)
+    // LOGIKA KEUANGAN (SINGLE SOURCE OF TRUTH)
     // =========================================================================
     function computeFinancialMetrics() {
       const user = getActiveUser();
@@ -1155,7 +1235,6 @@
       const dailyExpenseMap = {};
       const dailyIncomeMap = {};
 
-      // Deduplikasi transaksi berdasarkan ID untuk keamanan data
       const seenIds = new Set();
       const cleanTransactions = [];
 
@@ -1193,27 +1272,20 @@
       const initialSalary = Math.max(0, Number(user.initialSalary) || 0);
       const lockedSavings = Math.max(0, Number(user.lockedSavings) || 0);
 
-      // Total Saldo Bersih = Gaji Pokok + Pemasukan Ekstra - Total Pengeluaran
       const netBalance = initialSalary + totalExtraIncomeAllTime - totalExpenseAllTime;
-
-      // Saldo Aktif = Saldo Bersih dikurangi Dana Terkunci (tidak pernah pengurangan ganda)
       const effectiveLocked = Math.min(Math.max(0, netBalance), lockedSavings);
       const activeBalance = Math.max(0, netBalance - lockedSavings);
 
-      // Hitung Hari Menuju Gajian
       const paydayInfo = calculateDaysUntilPayday(todayStr, user.paydayDate);
       const daysLeft = paydayInfo.daysLeft;
 
-      // Dana Aman Harian = (Saldo Aktif Sebelum Belanja Hari Ini) / Sisa Hari
       const startOfDayBalance = activeBalance + todayExpense;
       const dailySafeLimit = startOfDayBalance / daysLeft;
       const todayRemaining = dailySafeLimit - todayExpense;
 
-      // Rata-rata harian bulan ini
       const dayOfMonth = Math.max(1, new Date().getDate());
       const avgDailyMonth = monthExpense / dayOfMonth;
 
-      // Kategori Terboros Bulan Ini
       let topCategory = '-';
       let topCategoryAmount = 0;
       Object.entries(monthCategoryExpense).forEach(([cat, val]) => {
@@ -1266,12 +1338,10 @@
       const user = m.user;
       const initials = user.name.substring(0, 2).toUpperCase();
 
-      // Identitas
       document.getElementById('sidebar-avatar').textContent = initials;
       document.getElementById('sidebar-username').textContent = user.name;
       document.getElementById('mobile-user-badge').textContent = user.name;
 
-      // Dashboard Hero
       document.getElementById('dash-today-label').textContent = formatDateIndo(m.todayStr);
       document.getElementById('card-daily-limit').textContent = formatRupiah(m.dailySafeLimit);
 
@@ -1288,7 +1358,6 @@
       document.getElementById('card-today-spent').textContent = formatRupiah(m.todayExpense);
       document.getElementById('card-days-left').textContent = m.countdownLabel;
 
-      // Banner Status
       const banner = document.getElementById('safe-status-banner');
       const bannerIcon = document.getElementById('safe-banner-icon');
       const bannerText = document.getElementById('safe-banner-text');
@@ -1315,7 +1384,6 @@
         lockPill.classList.add('hidden');
       }
 
-      // 4 Kotak Ringkasan
       document.getElementById('sum-month-income').textContent = formatRupiah(m.totalMonthIncome);
       document.getElementById('sum-month-expense').textContent = formatRupiah(m.monthExpense);
       document.getElementById('sum-locked-saving').textContent = formatRupiah(m.lockedSavings);
@@ -1327,7 +1395,6 @@
       renderFullHistory();
       renderBudgetAndAnalytics(m);
 
-      // Pengaturan Tab
       document.getElementById('lock-badge-val').textContent = formatRupiah(m.lockedSavings);
       document.getElementById('lock-amount-input').value = m.lockedSavings > 0 ? m.lockedSavings.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
       document.getElementById('set-initial-salary').value = m.initialSalary > 0 ? m.initialSalary.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
@@ -1393,4 +1460,583 @@
             <div class="min-w-0">
               <div class="flex items-center gap-1.5">
                 <p class="text-xs font-bold truncate">${escapeHTML(item.note)}</p>
-                ${!isMine ? `<span class="
+                ${!isMine ? `<span class="px-1.5 py-0.2 rounded bg-neutral-100 dark:bg-neutral-800 text-[10px] font-semibold text-neutral-500 shrink-0">${escapeHTML(item.userNameDisplay || item.username)}</span>` : ''}
+              </div>
+              <p class="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
+                ${escapeHTML(item.category || (isIncome ? 'Pemasukan' : 'Lainnya'))} • ${formatDateIndo(item.date)}
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="font-display font-bold text-xs tabular-nums ${isIncome ? 'text-emerald-600 dark:text-kk-mint' : 'text-neutral-900 dark:text-neutral-100'}">
+              ${isIncome ? '+' : '-'}${formatRupiah(item.amount)}
+            </span>
+            ${allowActions && isMine ? `
+              <button type="button" onclick="openEditModal('${item.id}')" aria-label="Edit" class="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200">
+                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+              </button>
+              <button type="button" onclick="promptDeleteTransaction('${item.id}')" aria-label="Hapus" class="p-1.5 rounded-lg text-neutral-400 hover:text-rose-600">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderRecentTransactions(m) {
+      const container = document.getElementById('recent-tx-list');
+      const mine = m.cleanTransactions
+        .filter(tx => String(tx.username || '').toLowerCase() === state.currentUser)
+        .sort((a, b) => (b.date.localeCompare(a.date)) || ((b.createdAt || 0) - (a.createdAt || 0)))
+        .slice(0, 5);
+
+      if (!mine.length) {
+        container.innerHTML = `<p class="py-6 text-center text-xs text-neutral-400">Belum ada transaksi tercatat.</p>`;
+        return;
+      }
+      container.innerHTML = mine.map(item => renderTransactionRow(item, true)).join('');
+    }
+
+    // =========================================================================
+    // CRUD TRANSAKSI
+    // =========================================================================
+    async function handleQuickTransactionSubmit(e) {
+      e.preventDefault();
+      const type = document.getElementById('quick-tx-type').value;
+      const amount = parseRupiah(document.getElementById('quick-amount').value);
+      const note = document.getElementById('quick-note').value.trim();
+      const date = document.getElementById('quick-date').value || getLocalDateString(0);
+      const category = type === 'income' ? 'Pemasukan' : (document.getElementById('quick-category').value || 'Lainnya');
+
+      if (amount <= 0) {
+        showToast('Masukkan nominal lebih dari Rp 0.', 'warning');
+        return;
+      }
+      if (!note) {
+        showToast('Isi catatan transaksi.', 'warning');
+        return;
+      }
+
+      const newTx = {
+        id: `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        date,
+        type,
+        category,
+        note,
+        amount,
+        createdAt: Date.now()
+      };
+
+      try {
+        const res = await apiRequest({ action: 'addTransaction', transaction: newTx }, 'Menyimpan transaksi...');
+        if (res && res.status === 'ok') {
+          state.users = res.users;
+          state.transactions = res.transactions;
+          saveState();
+          document.getElementById('quick-amount').value = '';
+          document.getElementById('quick-note').value = '';
+          refreshAllViews();
+          showToast('Transaksi berhasil dicatat!', 'success');
+        } else {
+          showToast(res?.message || 'Gagal menyimpan transaksi.', 'error');
+        }
+      } catch (err) {
+        showToast(err.message || 'Gagal terhubung ke server.', 'error');
+      }
+    }
+
+    function openEditModal(id) {
+      const tx = state.transactions.find(t => t.id === id);
+      if (!tx) return;
+      document.getElementById('edit-tx-id').value = tx.id;
+      document.getElementById('edit-tx-type').value = tx.type;
+      document.getElementById('edit-tx-amount').value = Number(tx.amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      document.getElementById('edit-tx-note').value = tx.note;
+      document.getElementById('edit-tx-date').value = tx.date;
+
+      const catWrap = document.getElementById('edit-tx-cat-wrap');
+      if (tx.type === 'income') {
+        catWrap.classList.add('hidden');
+      } else {
+        catWrap.classList.remove('hidden');
+        document.getElementById('edit-tx-category').value = tx.category || 'Lainnya';
+      }
+
+      const modal = document.getElementById('edit-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeEditModal() {
+      const modal = document.getElementById('edit-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function handleSaveEditTransaction(e) {
+      e.preventDefault();
+      const id = document.getElementById('edit-tx-id').value;
+      const type = document.getElementById('edit-tx-type').value;
+      const amount = parseRupiah(document.getElementById('edit-tx-amount').value);
+      const note = document.getElementById('edit-tx-note').value.trim();
+      const date = document.getElementById('edit-tx-date').value;
+      const category = type === 'income' ? 'Pemasukan' : document.getElementById('edit-tx-category').value;
+
+      if (amount <= 0 || !note || !date) {
+        showToast('Lengkapi semua kolom perubahan.', 'warning');
+        return;
+      }
+
+      try {
+        const res = await apiRequest({
+          action: 'updateTransaction',
+          transaction: { id, type, amount, note, date, category }
+        }, 'Memperbarui transaksi...');
+
+        if (res && res.status === 'ok') {
+          state.users = res.users;
+          state.transactions = res.transactions;
+          saveState();
+          closeEditModal();
+          refreshAllViews();
+          showToast('Perubahan disimpan.', 'success');
+        } else {
+          showToast(res?.message || 'Gagal memperbarui transaksi.', 'error');
+        }
+      } catch (err) {
+        showToast(err.message || 'Gagal terhubung ke server.', 'error');
+      }
+    }
+
+    function promptDeleteTransaction(id) {
+      openConfirmModal(
+        'Hapus Transaksi',
+        'Transaksi ini akan dihapus permanen dari catatan dan Google Sheets. Lanjutkan?',
+        'Hapus',
+        async () => {
+          try {
+            const res = await apiRequest({ action: 'deleteTransaction', id }, 'Menghapus transaksi...');
+            if (res && res.status === 'ok') {
+              state.users = res.users;
+              state.transactions = res.transactions;
+              saveState();
+              refreshAllViews();
+              showToast('Transaksi dihapus.', 'success');
+            } else {
+              showToast(res?.message || 'Gagal menghapus transaksi.', 'error');
+            }
+          } catch (err) {
+            showToast(err.message || 'Gagal terhubung ke server.', 'error');
+          }
+        }
+      );
+    }
+
+    // =========================================================================
+    // KALENDER KEUANGAN & RIWAYAT
+    // =========================================================================
+    function changeCalendarMonth(delta) {
+      calMonth += delta;
+      if (calMonth < 0) {
+        calMonth = 11;
+        calYear -= 1;
+      } else if (calMonth > 11) {
+        calMonth = 0;
+        calYear += 1;
+      }
+      renderCalendar(computeFinancialMetrics());
+    }
+
+    function selectCalendarDate(dateStr) {
+      calSelectedDate = calSelectedDate === dateStr ? null : dateStr;
+      renderCalendar(computeFinancialMetrics());
+      renderFullHistory();
+    }
+
+    function clearCalendarFilter() {
+      calSelectedDate = null;
+      renderCalendar(computeFinancialMetrics());
+      renderFullHistory();
+    }
+
+    function renderCalendar(m) {
+      const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+      document.getElementById('cal-month-title').textContent = `${monthNames[calMonth]} ${calYear}`;
+
+      const firstDay = new Date(calYear, calMonth, 1).getDay();
+      const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+      const grid = document.getElementById('calendar-grid');
+
+      let html = '';
+      for (let i = 0; i < firstDay; i++) {
+        html += `<div class="h-10"></div>`;
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const exp = m.dailyExpenseMap[dateStr] || 0;
+        const inc = m.dailyIncomeMap[dateStr] || 0;
+        const isToday = dateStr === m.todayStr;
+        const isSelected = dateStr === calSelectedDate;
+
+        html += `
+          <button type="button" onclick="selectCalendarDate('${dateStr}')" class="h-10 rounded-xl border text-xs flex flex-col items-center justify-center transition ${
+            isSelected
+              ? 'bg-neutral-900 text-white border-neutral-900 dark:bg-kk-mint dark:text-neutral-900 dark:border-kk-mint font-extrabold'
+              : isToday
+                ? 'border-neutral-900 dark:border-kk-mint font-bold'
+                : 'border-neutral-100 dark:border-kk-darkborder hover:bg-neutral-50 dark:hover:bg-neutral-800'
+          }">
+            <span>${d}</span>
+            <span class="flex items-center gap-0.5 mt-0.5 h-1.5">
+              ${exp > 0 ? `<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>` : ''}
+              ${inc > 0 ? `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>` : ''}
+            </span>
+          </button>
+        `;
+      }
+      grid.innerHTML = html;
+
+      const resetBar = document.getElementById('cal-filter-reset-bar');
+      if (calSelectedDate) {
+        resetBar.classList.remove('hidden');
+        document.getElementById('cal-active-date-badge').textContent = `Filter: ${formatDateIndo(calSelectedDate)}`;
+      } else {
+        resetBar.classList.add('hidden');
+      }
+    }
+
+    function renderFullHistory() {
+      const m = computeFinancialMetrics();
+      const scope = document.getElementById('filter-tx-scope').value;
+      const typeFilter = document.getElementById('filter-tx-type').value;
+      const catFilter = document.getElementById('filter-tx-cat').value;
+
+      const filtered = m.cleanTransactions
+        .filter(tx => {
+          if (scope === 'MINE' && String(tx.username || '').toLowerCase() !== state.currentUser) return false;
+          if (typeFilter !== 'ALL' && tx.type !== typeFilter) return false;
+          if (catFilter !== 'ALL' && tx.category !== catFilter) return false;
+          if (calSelectedDate && String(tx.date).substring(0, 10) !== calSelectedDate) return false;
+          return true;
+        })
+        .sort((a, b) => (b.date.localeCompare(a.date)) || ((b.createdAt || 0) - (a.createdAt || 0)));
+
+      document.getElementById('history-count-label').textContent = `${filtered.length} transaksi ditemukan`;
+      const container = document.getElementById('full-history-list');
+
+      if (!filtered.length) {
+        container.innerHTML = `<p class="py-8 text-center text-xs text-neutral-400">Tidak ada transaksi sesuai filter.</p>`;
+        lucide.createIcons({ nodes: [container] });
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => renderTransactionRow(item, true)).join('');
+      lucide.createIcons({ nodes: [container] });
+    }
+
+    // =========================================================================
+    // ANGGARAN & ANALISIS GRAFIK
+    // =========================================================================
+    function renderBudgetAndAnalytics(m) {
+      document.getElementById('ana-top-cat').textContent = m.topCategory;
+      document.getElementById('ana-top-cat-val').textContent = formatRupiah(m.topCategoryAmount);
+      document.getElementById('ana-daily-avg').textContent = `${formatRupiah(m.avgDailyMonth)} / hari`;
+      document.getElementById('ana-est-status').textContent = m.estStatus;
+
+      const budgets = m.user.budgets || {};
+      const listEl = document.getElementById('budget-category-list');
+
+      listEl.innerHTML = CATEGORIES.map(cat => {
+        const spent = m.monthCategoryExpense[cat.id] || 0;
+        const limit = Number(budgets[cat.id] || 0);
+        const pct = limit > 0 ? Math.min(100, Math.round((spent / limit) * 100)) : 0;
+        const over = limit > 0 && spent > limit;
+
+        return `
+          <div class="p-3 rounded-xl bg-neutral-50 dark:bg-kk-darkbg border border-neutral-200/80 dark:border-kk-darkborder space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="w-6 h-6 rounded-lg ${cat.chip} flex items-center justify-center shrink-0">
+                  <i data-lucide="${cat.icon}" class="w-3.5 h-3.5"></i>
+                </span>
+                <span class="text-xs font-bold truncate">${cat.id}</span>
+              </div>
+              <div class="relative w-32 shrink-0">
+                <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-neutral-400">Rp</span>
+                <input
+                  type="text"
+                  data-budget-cat="${cat.id}"
+                  value="${limit > 0 ? limit.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}"
+                  placeholder="Batas"
+                  inputmode="numeric"
+                  oninput="formatCurrencyInput(this)"
+                  class="budget-input w-full pl-7 pr-2 py-1.5 rounded-lg bg-white dark:bg-kk-darkcard border border-neutral-200 dark:border-kk-darkborder text-xs font-bold text-right focus:outline-none"
+                />
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400 tabular-nums">
+              <span>Terpakai: <strong class="${over ? 'text-rose-600' : 'text-neutral-900 dark:text-neutral-100'}">${formatRupiah(spent)}</strong></span>
+              <span>${limit > 0 ? `${pct}% dari ${formatRupiah(limit)}` : 'Tanpa batas'}</span>
+            </div>
+            ${limit > 0 ? `
+              <div class="h-1.5 w-full rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
+                <div class="h-full rounded-full ${over ? 'bg-rose-500' : 'bg-emerald-500'}" style="width: ${pct}%"></div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      if (activeTab === 'budget') {
+        renderAnalyticsCharts(m);
+      }
+    }
+
+    async function saveBudgetsToBackend() {
+      const inputs = document.querySelectorAll('.budget-input');
+      const budgets = {};
+      inputs.forEach(inp => {
+        const cat = inp.getAttribute('data-budget-cat');
+        const val = parseRupiah(inp.value);
+        if (cat && val > 0) budgets[cat] = val;
+      });
+
+      try {
+        const res = await apiRequest({ action: 'saveUserConfig', budgets }, 'Menyimpan anggaran...');
+        if (res && res.status === 'ok') {
+          state.users = res.users;
+          state.transactions = res.transactions;
+          saveState();
+          refreshAllViews();
+          showToast('Anggaran kategori disimpan!', 'success');
+        } else {
+          showToast(res?.message || 'Gagal menyimpan anggaran.', 'error');
+        }
+      } catch (err) {
+        showToast(err.message || 'Gagal terhubung ke server.', 'error');
+      }
+    }
+
+    function renderAnalyticsCharts(m) {
+      const isDark = state.theme === 'dark';
+      const textColor = isDark ? '#a3a3a3' : '#525252';
+      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+      // 1. Bar Chart 7 Hari Terakhir
+      const labels7 = [];
+      const spent7 = [];
+      const safe7 = [];
+      for (let i = -6; i <= 0; i++) {
+        const ds = getLocalDateString(i);
+        labels7.push(ds.substring(5));
+        spent7.push(m.dailyExpenseMap[ds] || 0);
+        safe7.push(Math.round(m.dailySafeLimit));
+      }
+
+      const barCtx = document.getElementById('barTrendChart');
+      if (barChartInstance) barChartInstance.destroy();
+      barChartInstance = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels: labels7,
+          datasets: [
+            {
+              label: 'Pengeluaran',
+              data: spent7,
+              backgroundColor: '#f43f5e',
+              borderRadius: 6
+            },
+            {
+              label: 'Dana Aman',
+              data: safe7,
+              type: 'line',
+              borderColor: '#10b981',
+              borderWidth: 2,
+              pointRadius: 2,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: textColor, font: { size: 10 } } } },
+          scales: {
+            x: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } },
+            y: { ticks: { color: textColor, font: { size: 10 } }, grid: { color: gridColor } }
+          }
+        }
+      });
+
+      // 2. Doughnut Chart Proporsi Kategori
+      const catLabels = [];
+      const catValues = [];
+      const catColors = [];
+      CATEGORIES.forEach(c => {
+        const val = m.monthCategoryExpense[c.id] || 0;
+        if (val > 0) {
+          catLabels.push(c.label);
+          catValues.push(val);
+          catColors.push(c.color);
+        }
+      });
+
+      const doughnutCtx = document.getElementById('doughnutCategoryChart');
+      const emptyEl = document.getElementById('doughnut-empty');
+      if (doughnutChartInstance) doughnutChartInstance.destroy();
+
+      if (!catValues.length) {
+        doughnutCtx.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+      } else {
+        doughnutCtx.classList.remove('hidden');
+        emptyEl.classList.add('hidden');
+        doughnutChartInstance = new Chart(doughnutCtx, {
+          type: 'doughnut',
+          data: {
+            labels: catLabels,
+            datasets: [{ data: catValues, backgroundColor: catColors, borderWidth: 0 }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '62%',
+            plugins: { legend: { position: 'right', labels: { color: textColor, font: { size: 10 } } } }
+          }
+        });
+      }
+    }
+
+    // =========================================================================
+    // PENGATURAN AKUN, EKSPOR & RESET
+    // =========================================================================
+    async function handleUpdateLockedSavings(e) {
+      e.preventDefault();
+      const lockedSavings = parseRupiah(document.getElementById('lock-amount-input').value);
+      try {
+        const res = await apiRequest({ action: 'saveUserConfig', lockedSavings }, 'Menyimpan dana kunci...');
+        if (res && res.status === 'ok') {
+          state.users = res.users;
+          state.transactions = res.transactions;
+          saveState();
+          refreshAllViews();
+          showToast('Dana kunci diperbarui.', 'success');
+        } else {
+          showToast(res?.message || 'Gagal menyimpan.', 'error');
+        }
+      } catch (err) {
+        showToast(err.message || 'Gagal terhubung ke server.', 'error');
+      }
+    }
+
+    async function handleUpdateMainSettings(e) {
+      e.preventDefault();
+      const initialSalary = parseRupiah(document.getElementById('set-initial-salary').value);
+      const paydayDate = document.getElementById('set-payday-date').value;
+      if (initialSalary <= 0 || !paydayDate) {
+        showToast('Isi gaji pokok dan tanggal gajian dengan benar.', 'warning');
+        return;
+      }
+
+      try {
+        const res = await apiRequest({ action: 'saveUserConfig', initialSalary, paydayDate }, 'Memperbarui gaji...');
+        if (res && res.status === 'ok') {
+          state.users = res.users;
+          state.transactions = res.transactions;
+          saveState();
+          refreshAllViews();
+          showToast('Gaji dan tanggal gajian diperbarui.', 'success');
+        } else {
+          showToast(res?.message || 'Gagal memperbarui.', 'error');
+        }
+      } catch (err) {
+        showToast(err.message || 'Gagal terhubung ke server.', 'error');
+      }
+    }
+
+    async function handleChangePassword(e) {
+      e.preventDefault();
+      const newPass = document.getElementById('set-new-password').value.trim();
+      if (newPass.length < 4) {
+        showToast('Password minimal 4 karakter.', 'warning');
+        return;
+      }
+      try {
+        const res = await apiRequest({ action: 'saveUserConfig', password: newPass }, 'Mengubah password...');
+        if (res && res.status === 'ok') {
+          document.getElementById('set-new-password').value = '';
+          showToast('Password berhasil diubah.', 'success');
+        } else {
+          showToast(res?.message || 'Gagal mengubah password.', 'error');
+        }
+      } catch (err) {
+        showToast(err.message || 'Gagal terhubung ke server.', 'error');
+      }
+    }
+
+    function exportToCSV() {
+      const m = computeFinancialMetrics();
+      const rows = [['ID', 'Tanggal', 'Pemilik', 'Tipe', 'Kategori', 'Catatan', 'Nominal']];
+      m.cleanTransactions.forEach(tx => {
+        rows.push([
+          tx.id,
+          tx.date,
+          tx.userNameDisplay || tx.username,
+          tx.type,
+          tx.category,
+          `"${String(tx.note || '').replace(/"/g, '""')}"`,
+          tx.amount
+        ]);
+      });
+      const csv = rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `KasKita_${m.todayStr}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function promptResetToZero() {
+      openConfirmModal(
+        'Reset Data Akun',
+        'Semua transaksi dan saldo akun milikmu akan direset ke 0. Tindakan ini tidak dapat dibatalkan.',
+        'Reset Sekarang',
+        async () => {
+          try {
+            const res = await apiRequest({ action: 'resetUserAccount' }, 'Mereset akun...');
+            if (res && res.status === 'ok') {
+              state.users = res.users;
+              state.transactions = res.transactions;
+              saveState();
+              renderEntryScreen();
+              showToast('Akun berhasil direset ke 0.', 'success');
+            } else {
+              showToast(res?.message || 'Gagal mereset akun.', 'error');
+            }
+          } catch (err) {
+            showToast(err.message || 'Gagal terhubung ke server.', 'error');
+          }
+        }
+      );
+    }
+
+    // =========================================================================
+    // INISIALISASI APLIKASI
+    // =========================================================================
+    (function initApp() {
+      applyTheme();
+      const quickDateEl = document.getElementById('quick-date');
+      if (quickDateEl) quickDateEl.value = getLocalDateString(0);
+      renderEntryScreen();
+      if (state.token && state.currentUser) {
+        syncFromBackend(false);
+      }
+    })();
+  </script>
+</body>
+</html>
